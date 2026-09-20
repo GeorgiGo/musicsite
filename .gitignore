@@ -1,3 +1,4 @@
-beckend/__pycache__/*
-old/*
-react-site/*
+beckend/__pycache__
+beckend/songs_library/
+react-site/node_modules/
+old/
