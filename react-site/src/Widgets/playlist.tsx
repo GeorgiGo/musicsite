@@ -22,10 +22,11 @@ function SongMin({ playlistId, id, baseSongInformation, setCurSong }: SongElemen
         setIsDragging(true);
         setWasDragging(false)
     };
+    const API_URL = window.location.hostname == 'localhost' ? '127.0.0.1' : '192.168.0.105'
     const handleDelete = () => {
         if (isFetching) return
         setFetching(true)
-        fetch(`http://127.0.0.1:8000/playlists/${playlistId}/add_song/${id}`, { method: 'DELETE' }).then(() => setFetching(false)).then(() => updatePlaylists())
+        fetch(`http://${API_URL}:8000/playlists/${playlistId}/add_song/${id}`, { method: 'DELETE' }).then(() => setFetching(false)).then(() => updatePlaylists())
     }
     useEffect(() => {
         const handleMove = (e: MouseEvent) => {
@@ -74,16 +75,17 @@ export default function Playlist({ id, name, songs }: Playlist) {
         localStorage.setItem('playlistsState', JSON.stringify(old));
         setOpened(!isOpened);
     }
+    const API_URL = window.location.hostname == 'localhost' ? '127.0.0.1' : '192.168.0.105'
     useEffect(() => {
         updatePlaylists()
     }, [])
     return (
         <div data-id={id} className='playlist hover:border-sky mb-4 border-surface1 border-2 shadow-[0_0_6px_var(--color-mantle)]'>
             <div onClick={() => { setOpenedState(); }} className='flex bg-surface1 p-1'>
-                <h1 onBlur={(e) => fetch('http://127.0.0.1:8000/playlists/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json;charset=utf8' }, body: JSON.stringify({ name: e.target.innerText }) })} onClick={e => e.stopPropagation()} contentEditable={true} className='outline-0 no-underline select-none ml-2 text-text font-bold'>{name}</h1>
+                <h1 onBlur={(e) => fetch(`http://${API_URL}:8000/playlists/` + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json;charset=utf8' }, body: JSON.stringify({ name: e.target.innerText }) })} onClick={e => e.stopPropagation()} contentEditable={true} className='outline-0 no-underline select-none ml-2 text-text font-bold'>{name}</h1>
                 <button onClick={e => {
                     if (confirm('Удалить плейлист: ' + name)) {
-                        fetch('http://127.0.0.1:8000/playlists/' + id, { method: 'DELETE' })
+                        fetch(`http://${API_URL}:8000/playlists/` + id, { method: 'DELETE' })
                         setPlaylists(prev => prev.filter(el => el.id !== id))
                     }
                     e.stopPropagation()

@@ -8,7 +8,8 @@ export function AudioProvider({ children }) {
     const [currentSongIdx, setCurrentSongIdx] = useState<number>(0);
     const audioRef = useRef<HTMLAudioElement>(null)
     const [playlists, setPlaylists] = useState([]);
-    const updatePlaylists = () => { fetch('http://127.0.0.1:8000/playlists').then(r => r.json()).then(d => setPlaylists(d)) }
+    const API_URL = window.location.hostname == 'localhost' ? '127.0.0.1' : '192.168.0.105'
+    const updatePlaylists = () => { fetch(`http://${API_URL}:8000/playlists`).then(r => r.json()).then(d => setPlaylists(d)) }
 
     const nextTrack = () => {
         if (!audioRef.current?.loop) {
@@ -26,12 +27,22 @@ export function AudioProvider({ children }) {
         if (arr !== null) localStorage.setItem('queue', JSON.stringify(arr))
         localStorage.setItem('idx', idx)
     }
-    const setPlay = (value: boolean) => {
-        setIsPlaying(value)
-        if (value)
-            audioRef.current?.play()
-        else
-            audioRef.current?.pause()
+    const setPlay = (value: boolean | ((prev: boolean) => boolean)) => {
+        setIsPlaying((currentIsPlaying) => {
+
+            // Вычисляем следующее состояние: если пришла функция — вызываем её, если boolean — берем как есть
+            const nextValue = typeof value === 'function' ? value(currentIsPlaying) : value;
+
+            // Управляем аудио в зависимости от вычисленного нового значения
+            if (nextValue) {
+                audioRef.current?.play();
+            } else {
+                audioRef.current?.pause();
+            }
+
+            // Возвращаем новое состояние, чтобы обновить стейт
+            return nextValue;
+        });
     }
     useEffect(() => {
         setCurTrack(localStorage.getItem('idx'), JSON.parse(localStorage.getItem('queue')))
@@ -48,19 +59,20 @@ export function AudioProvider({ children }) {
         <AudioContext.Provider value={{ editSong, queue, isPlaying, currentSong, setCurTrack, setQueue, setPlay, audioRef, playlists, setPlaylists, updatePlaylists }}>
             {isEditingSong ? <EditSong curEditingSong={curEditingSong} setCurEditingSong={setCurEditingSong} setEditingSong={setEditingSong} /> : <></>}
             {children}
-            <audio onEnded={() => nextTrack()} ref={audioRef} src={"http://127.0.0.1:8000" + currentSong?.stream_url} />
+            <audio onEnded={() => nextTrack()} ref={audioRef} src={`http://${API_URL}:8000${currentSong?.stream_url}`} />
         </AudioContext.Provider>
     );
 }
 function EditSong({ curEditingSong, setCurEditingSong, setEditingSong }) {
     const form = useRef(null)
+    const API_URL = window.location.hostname == 'localhost' ? '127.0.0.1' : '192.168.0.105'
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (form.current == null) return;
         const formData = new FormData(form.current);
         try {
-            const response = await fetch(`http://127.0.0.1:8000/songs/${curEditingSong.video_id}`, {
+            const response = await fetch(`http://${API_URL}:8000/songs/${curEditingSong.video_id}`, {
                 method: 'PATCH',
                 body: formData
             });
@@ -72,7 +84,7 @@ function EditSong({ curEditingSong, setCurEditingSong, setEditingSong }) {
         } catch (error) {
             console.error('Ошибка сети:', error);
         }
-        await fetch(`http://127.0.0.1:8000/update`)
+        await fetch(`http://${API_URL}:8000/update`)
         setEditingSong(false)
     }
 

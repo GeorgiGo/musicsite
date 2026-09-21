@@ -41,6 +41,10 @@ app.mount(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "*",
+        "http://192.168.0.105:5173",
+        "http://192.168.0.100:5173",
+        "http://192.168.0.100",
         "http://localhost:5173",
         "http://127.0.0.0:5173",
         "http://127.0.0.1:5173",
@@ -225,24 +229,9 @@ def update_songs():
     _sync_songs()
 
 
-from sqlmodel import Session, select, or_, and_
+from sqlmodel import Session, select, or_, and_, func
 
 
 @app.get("/search_local")
 def search_local(session: SessionDep, search: str = ""):
-    words = [w.strip() for w in search.split()]
-    if not words:
-        return session.exec(select(Song)).all()
-    else:
-        conditions = []
-        for word in words:
-            # Слово должно быть ИЛИ в title, ИЛИ в artist
-            search_pattern = f"%{word}%"
-            conditions.append(
-                or_(
-                    Song.title.ilike(search_pattern),
-                    Song.artist.ilike(search_pattern),
-                )
-            )
-        # Объединяем условия для всех слов через AND (каждое слово должно совпасть)
-        return session.exec(select(Song).where(and_(*conditions))).all()
+    return session.exec(select(Song)).all()

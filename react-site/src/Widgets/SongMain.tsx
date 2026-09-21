@@ -15,6 +15,7 @@ export function Song({ isPlaying, video_id, baseSongInformation, setCurSong }: S
     const { editSong, updatePlaylists } = useAudio()
     // Порог в пикселях, после которого песня считается сохраненной
     const swipeThreshold = -120;
+    const API_URL = window.location.hostname == 'localhost' ? '127.0.0.1' : '192.168.0.105'
     // Вычисляем текущее смещение влево (берем только отрицательные значения)
     const dragOffsetX = isDragging ? (!isPlaylisting ? Math.min(Math.abs(swipeThreshold), currentX - startX) : currentX - startX) : 0
     const dragOffsetY = isPlaylisting ? currentY - startY : 0
@@ -52,7 +53,7 @@ export function Song({ isPlaying, video_id, baseSongInformation, setCurSong }: S
                 console.log(playlistId)
                 console.log(video_id)
                 if (video_id !== undefined && playlistId !== undefined) {
-                    fetch(`http://127.0.0.1:8000/playlists/${playlistId}/add_song/${video_id}`, { method: 'POST' }).then(() => updatePlaylists())
+                    fetch(`http://${API_URL}:8000/playlists/${playlistId}/add_song/${video_id}`, { method: 'POST' }).then(() => updatePlaylists())
                 }
             } else if (currentX - startX <= swipeThreshold) {
                 editSong(video_id, baseSongInformation.title, baseSongInformation.artist, baseSongInformation.cover_url)
