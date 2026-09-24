@@ -1,3 +1,4 @@
+import shutil
 from typing import List, Optional
 import urllib
 import urllib.parse
@@ -40,15 +41,7 @@ app.mount(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "*",
-        "http://192.168.0.105:5173",
-        "http://192.168.0.100:5173",
-        "http://192.168.0.100",
-        "http://localhost:5173",
-        "http://127.0.0.0:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -78,11 +71,21 @@ def get_all_songs(session: SessionDep):
 
 
 @app.get("/songs/{song_id}")
-def get_song(song_id: int, session: SessionDep):
-    song = session.get(Song, song_id)
+def get_song(song_id: str, session: SessionDep):
+    song = session.exec(select(Song).where(Song.video_id == song_id)).first()
     if not song:
         raise HTTPException(status_code=404, detail="Song not found")
     return song
+
+
+@app.post("/songs/new", response_model=None)
+async def add_song_files(songs: list[UploadFile] = File(...)):
+    for song in songs:
+        name: str = song.filename
+        if name.endswith(".mp3") and not os.path.exists(f"./songs_library/{name}"):
+            with open(f"./songs_library/{name}", "wb") as b:
+                shutil.copyfileobj(song.file, b)
+    return {"message": "saved"}
 
 
 @app.patch("/songs/{song_id}", response_model=Song)
@@ -208,7 +211,7 @@ def add_song_to_playlist(playlist_id: int, song_id: str, session: SessionDep):
     return playlist
 
 
-@app.delete("/playlists/{playlist_id}/add_song/{song_id}")
+@app.delete("/playlists/{playlist_id}/remove_song/{song_id}")
 def delete_song_from_playlist(playlist_id: int, song_id: str, session: SessionDep):
     song = session.exec(select(Song).where(Song.video_id == song_id)).first()
     if not song:

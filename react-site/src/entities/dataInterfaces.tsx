@@ -1,28 +1,39 @@
-export interface SongInformation {
-    id: number;
-    video_id: string;
-    stream_url: string;
-    baseSongInformation: BaseSongInformation
-}
+import type { RefObject } from "react";
+
 export interface SongEditInformation {
     video_id: string;
     title: string;
     artist: string;
-    cover_file;
+    cover_file: string;
 }
-export interface BaseSongInformation {
+
+export interface Playlist {
+    id: number;
+    name: string;
+    additional_data: string;
+    songs: Song[];
+}
+/** An interface for `SearchDropdown` component's parametrs */
+export interface SearchDropdownProps {
+    dropdownData: string[],
+    searchFunc: () => void,
+    setValue: (s: string) => void,
+    search: string,
+    inputElRef: RefObject<HTMLInputElement>
+}
+export interface BaseSong {
     title: string;
     artist: string;
     duration: number;
     cover_url: string;
 }
-export interface SongElementInformation extends SongInformation {
-    setCurSong: () => void;
-    updatePlaylists: () => void;
-}
-export interface Playlist {
+/** An interface, that describes a song*/
+export interface Song extends BaseSong {
     id: number;
-    name: string;
-    additional_data: string;
-    songs: [];
+    video_id: string;
+    stream_url: string;
+}
+export interface SongElement extends Song {
+    isPlaying: boolean
+    setCurSong: () => void;
 }

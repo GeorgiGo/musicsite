@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef } from "react";
-import type { SongElementInformation } from "../entities/dataInterfaces";
 import CommonInformation from "../shared/baseSongInformation";
 import { useAudio } from "../entities/AudioContext";
+import type { SongElement } from "../entities/dataInterfaces";
+import { EditSVG, ListPlusSVG } from "../shared/svgIcons";
+import { MusicAPI } from "../entities/api";
 
-export function Song({ isPlaying, video_id, baseSongInformation, setCurSong }: SongElementInformation) {
+export function SongEl({ isPlaying, video_id, title, artist, cover_url, duration, setCurSong }: SongElement) {
     const [startX, setStartX] = useState<number>(0);
     const [startY, setStartY] = useState<number>(0);
     const [currentX, setCurrentX] = useState<number>(0);
@@ -15,7 +17,6 @@ export function Song({ isPlaying, video_id, baseSongInformation, setCurSong }: S
     const { editSong, updatePlaylists } = useAudio()
     // Порог в пикселях, после которого песня считается сохраненной
     const swipeThreshold = -120;
-    const API_URL = window.location.hostname == 'localhost' ? '127.0.0.1' : '192.168.0.105'
     // Вычисляем текущее смещение влево (берем только отрицательные значения)
     const dragOffsetX = isDragging ? (!isPlaylisting ? Math.min(Math.abs(swipeThreshold), currentX - startX) : currentX - startX) : 0
     const dragOffsetY = isPlaylisting ? currentY - startY : 0
@@ -25,7 +26,6 @@ export function Song({ isPlaying, video_id, baseSongInformation, setCurSong }: S
         setStartY(clientY);
         setCurrentX(clientX);
         setCurrentY(clientY);
-
         setIsDragging(true);
         setWasDragging(false)
         setPlaylisting(false)
@@ -44,19 +44,16 @@ export function Song({ isPlaying, video_id, baseSongInformation, setCurSong }: S
         };
 
         // --- ОБРАБОТЧИКИ ЗАВЕРШЕНИЯ ---
-        const handleEnd = (e) => {
+        const handleEnd = async (e: MouseEvent) => {
             setIsDragging(false);
             setPlaylisting(false);
 
             if (isPlaylisting) {
                 const playlistId = e.target.closest('.playlist')?.dataset.id
-                console.log(playlistId)
-                console.log(video_id)
-                if (video_id !== undefined && playlistId !== undefined) {
-                    fetch(`http://${API_URL}:8000/playlists/${playlistId}/add_song/${video_id}`, { method: 'POST' }).then(() => updatePlaylists())
-                }
+                if (video_id !== undefined && playlistId !== undefined)
+                    await MusicAPI.addSongToPlaylist(playlistId, video_id).then(() => updatePlaylists()).catch(err => console.error(err))
             } else if (currentX - startX <= swipeThreshold) {
-                editSong(video_id, baseSongInformation.title, baseSongInformation.artist, baseSongInformation.cover_url)
+                editSong(video_id, title, artist, cover_url)
             }
             // Сбрасываем координаты
             setStartX(0);
@@ -75,14 +72,14 @@ export function Song({ isPlaying, video_id, baseSongInformation, setCurSong }: S
         if (!wasDragging) { setCurSong() }
     }
     return (
-        <div style={{ pointerEvents: (isPlaylisting ? 'none' : 'auto'), backgroundColor: `color-mix(in srgb, var(--color-${dragOffsetX > 0 ? 'teal' : 'blue'}${isPlaylisting ? 'n' : ''}) ${progress * 100}%, var(--color-mantle))` }} className='relative flex w-full bg-surface1 mt-[0.5vw] after:bg-surface0 after:w-[100%] after:h-[1px] after:bottom-[-0.25vw] after:absolute'>
+        <div style={{ pointerEvents: (isPlaylisting ? 'none' : 'auto'), backgroundColor: `color-mix(in srgb, var(--color-${dragOffsetX > 0 ? 'teal' : 'blue'}${isPlaylisting ? 'n' : ''}) ${progress * 100}%, var(--color-mantle))` }} className='relative flex w-full bg-surface1 mt-[2vh] xl:mt-[1vh] after:bg-surface0 after:w-[100%] after:h-[1px] after:bottom-[-1vh] xl:after:bottom-[-0.5vh] after:absolute'>
             <div style={{ zIndex: (isPlaylisting ? 50 : 1), transform: `translate(${dragOffsetX}px, ${dragOffsetY}px)` }} ref={cardRef} onMouseDown={(e) => handleStart(e.clientX, e.clientY)} onClick={onClickSong} className={`transition-colors duration-300 group/card relative rounded-4x1 w-full song content-center relative flex  bg-${isPlaying ? 'surface0' : 'mantle'} [&:hover:not(:has(.but:hover))]:bg-surface0`}>
-                <CommonInformation {...baseSongInformation} />
-                <div className="but group flex z-60 ml-1">
+                <CommonInformation title={title} artist={artist} duration={duration} cover_url={cover_url} />
+                <div className="but group flex z-60 m-auto xl:ml-1 mr-2">
                     <button className="transition-all  group-hover:pr-2 group-hover:pl-4 justify-between inset duration-300 group-hover:opacity-0 group-hover:invisible opacity-100 hover:scale-130 pl-1 pr-1 m-1 select-none text-[large] text-subtext0">󰇙</button>
-                    <div className="absolute transition-all duration-300 group-hover:opacity-100 group-hover:visible opacity-0 invisible flex flex-row text-center">
-                        <button onClick={e => { e.stopPropagation(); }} className="hover:scale-130 pl-1 pr-1 m-3 mr-0 ml-0 select-none text-[large] text-text">󰐒</button>
-                        <button onClick={e => { e.stopPropagation(); editSong(video_id, baseSongInformation.title, baseSongInformation.artist, baseSongInformation.cover_url); }} className="hover:scale-130 pl-1 pr-1 m-3 mr-0 ml-0 select-none text-[large] text-text"></button>
+                    <div className="absolute transition-all duration-300 group-hover:opacity-100 group-hover:visible xl:opacity-0 xl:invisible flex flex-row text-center">
+                        <button onClick={e => { e.stopPropagation(); }} className="hover:scale-130 pl-1 pr-1 m-3 mr-0 ml-0 select-none text-[large] text-text"><ListPlusSVG /></button>
+                        <button onClick={e => { e.stopPropagation(); editSong(video_id, title, artist, cover_url); }} className="hover:scale-130 pl-1 pr-2 m-3 mr-0 ml-0 select-none text-[large] text-text"><EditSVG /></button>
                     </div>
                 </div>
             </div>
@@ -90,5 +87,6 @@ export function Song({ isPlaying, video_id, baseSongInformation, setCurSong }: S
             <h1 className='select-none -z-0 absolute right-4 top-1/2 -translate-y-1/2 text-[xx-large] text-mantle'></h1>
         </div>
     )
+    // 󰐒
 }
 
