@@ -1,17 +1,19 @@
 import { createContext, useState, useContext, useRef, useEffect } from "react";
-import EditSong from "../Widgets/EditSongW";
-import type { SongEditInformation, Song, Playlist } from "./dataInterfaces";
-import useLocalStorage from "./useLocalStorage";
-import { MusicAPI } from "./api";
+import EditSong from "../../Widgets/EditSongW";
+import type { SongEditInformation, Song, Playlist } from "../dataInterfaces";
+import useLocalStorage from "../hooks/useLocalStorage";
+import { MusicAPI } from "../api";
 
 const AudioContext = createContext(null)
 export function AudioProvider({ children }) {
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [isShuffled, setIsShuffled] = useLocalStorage<boolean>('isShuffled', false);
     const [queue, setQueue] = useState<Song[]>([]);
+    const [mainQueue, setMainQueue] = useState<Song[]>([]);
     const [currentSong, setCurrentSong] = useState<Song>(null);
     const [currentSongIdx, setCurrentSongIdx] = useState<number>(0);
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
+    const [loop, setIsLoop] = useLocalStorage<boolean>('isLoop', false);
     const audioRef = useRef<HTMLAudioElement>(null);
     const audioSourceRef = useRef<any>(null);
     const updatePlaylists = () => { MusicAPI.getAllPlaylists().then(d => setPlaylists(d)).catch(err => console.error(err)) }
@@ -26,13 +28,15 @@ export function AudioProvider({ children }) {
         }
 
     }
-    const setCurTrack = async (idx, arr = null) => {
+    const setCurTrack = async (idx: number, arr = null) => {
         if (arr !== null) setQueue(arr)
         setCurrentSongIdx(idx)
         setCurrentSong(arr !== null ? arr[idx] : queue[idx])
         if (arr !== null) localStorage.setItem('queue', JSON.stringify(arr))
         localStorage.setItem('idx', JSON.stringify(idx))
     }
+
+    useEffect(() => { audioRef.current.loop = loop }, [loop]);
     const setPlay = (value: boolean | ((prev: boolean) => boolean)) => {
         setIsPlaying((currentIsPlaying) => {
             // Вычисляем следующее состояние: если пришла функция — вызываем её, если boolean — берем как есть
@@ -48,7 +52,7 @@ export function AudioProvider({ children }) {
     }
     useEffect(() => {
         setCurTrack(JSON.parse(localStorage.getItem('idx')), JSON.parse(localStorage.getItem('queue')))
-        audioRef.current.loop = localStorage.getItem('loop') !== null ? JSON.parse(localStorage.getItem('loop')) : false
+        audioRef.current.loop = localStorage.getItem('isLoop') !== null ? JSON.parse(localStorage.getItem('isLoop')) : false
     }, [])
     const [isEditingSong, setEditingSong] = useState<boolean>(false);
     const [curEditingSong, setCurEditingSong] = useState<SongEditInformation>({ video_id: '', title: "", artist: "", cover_file: "null" });
@@ -57,7 +61,7 @@ export function AudioProvider({ children }) {
         setEditingSong(true)
     }
     return (
-        <AudioContext.Provider value={{ setIsShuffled, isShuffled, audioSourceRef, editSong, queue, isPlaying, currentSong, setCurTrack, setQueue, setPlay, audioRef, playlists, setPlaylists, updatePlaylists, currentSongIdx }}>
+        <AudioContext.Provider value={{ setIsShuffled, setMainQueue, mainQueue, isShuffled, audioSourceRef, editSong, queue, isPlaying, currentSong, setCurTrack, setQueue, setPlay, audioRef, playlists, setPlaylists, updatePlaylists, currentSongIdx, loop, setIsLoop }}>
             {isEditingSong ? <EditSong curEditingSong={curEditingSong} setCurEditingSong={setCurEditingSong} setEditingSong={setEditingSong} /> : <></>}
             {children}
             <audio crossOrigin="anonymous" onEnded={() => nextTrack()} ref={audioRef} src={`${import.meta.env.VITE_API_URL}${currentSong?.stream_url}`} />

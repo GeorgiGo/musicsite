@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useStatistics } from "../../entities/StatisticsContext";
-import { useAudio } from "../../entities/AudioContext";
-import type { dateTime, songTimeStat } from "../../entities/dataInterfaces";
+import { useStatistics } from "../../entities/contexts/StatisticsContext";
+import { useAudio } from "../../entities/contexts/AudioContext";
+import type { dateTime, Song, songTimeStat } from "../../entities/dataInterfaces";
 import Calendar from "./Calendar";
 import { Field, compareDate, timeFromSeconds } from "../../Widgets/statistics";
 
@@ -10,7 +10,7 @@ export default function EachSongTime({ update }) {
     const [curDate, setCurDate] = useState<Date>(new Date());
     if (!update) return
 
-    return (<div className="col-span-3 flex flex-row bg-mantle p-4 relative">
+    return (<div className="col-span-3 flex flex-row bg-mantle p-4 relative  border-2 border-surface0 rounded-xl">
         <List curDate={curDate} setActiveSong={setActiveSong} />
         <CircleDiagram activeSong={activeSong} curDate={curDate} />
         <Calendar setNewDate={setCurDate} />
@@ -18,47 +18,44 @@ export default function EachSongTime({ update }) {
 }
 function List({ curDate, setActiveSong }: { curDate: Date, setActiveSong: (v: songTimeStat) => void }) {
     const { songTimeDict } = useStatistics()
-    const { currentSong } = useAudio()
+    const { mainQueue, currentSong, setCurTrack } = useAudio()
 
     let useDate = curDate.getFullYear() != -1  //if year == -1, set no date, use alltime
-    const curTimesIdx = songTimeDict[0] && useDate ? songTimeDict[0].times
-        .findIndex((t: dateTime) => t.date.year == curDate?.getFullYear() && t.date.month == curDate?.getMonth() && t.date.day == curDate?.getDate()) : -2
-    if (curTimesIdx == -1) useDate = false;  //no date, use alltime
-    const getTime = (song: songTimeStat) => { return useDate ? song.times[curTimesIdx].time : song.times.reduce((acc, val) => acc + val.time, 0) }
+    const songTimeDictFiltred = useDate ? songTimeDict.filter((std: songTimeStat) => std.times.findIndex((t: dateTime) => compareDate(curDate, t.date)) != -1) : songTimeDict
+    const songTimeDictMapped = songTimeDictFiltred.map((sts: songTimeStat) => ({ ...sts, times: (useDate ? sts.times.find((dt: dateTime) => compareDate(curDate, dt.date)).time : sts.times.reduce((acc: number, dt: dateTime) => acc + dt.time, 0)) }))
+    if (songTimeDictFiltred.length == 0) useDate = false;  //no date, use alltime
 
     return (
         <div className="w-1/3 block max-h-[40vh] overflow-y-scroll scrollbar-thin scrollbar-track-crust scrollbar-thumb-blue">
-            {songTimeDict.sort((a: songTimeStat, b: songTimeStat) => getTime(b) - getTime(a)).map((value: songTimeStat) => <Field
+            {songTimeDictMapped.sort((a: songTimeStat, b: songTimeStat) => b.times - a.times).map((value: songTimeStat) => <Field
                 key={value.video_id}
                 name={value.name}
                 onMouseEnter={() => setActiveSong({ video_id: '', name: value.name, times: value.times })}
+                onClick={() => { setCurTrack(mainQueue.findIndex(el => el.video_id == value.video_id), mainQueue) }}
                 onMouseLeave={() => setActiveSong(null)}
                 style={{ color: currentSong?.video_id == value.video_id ? 'var(--color-text)' : 'var(--color-subtext0)', fontWeight: currentSong?.video_id == value.video_id ? 'bold' : '' }}
-                className="border-b-[3px] border-base select-none text-subtext0 hover:text-blue! hover:text-shadow-[0_0_6px_var(--color-blue)] p-1 text-[small]"
-                value={getTime(value)} metricFunc={timeFromSeconds} />)}
+                className="lg:text-[medium] border-b-[3px] border-base select-none text-subtext0 hover:text-blue! hover:text-shadow-[0_0_6px_var(--color-blue)] p-1 text-[small]"
+                value={value.times} metricFunc={timeFromSeconds} />)}
         </div>)
 }
 function CircleDiagram({ activeSong, curDate }: { curDate: Date, activeSong: songTimeStat }) {
     const { songTimeDict } = useStatistics()
-
     if (!songTimeDict[0]) return
+
     let useDate = curDate.getFullYear() != -1
-    const curTimesIdx = useDate ? songTimeDict[0].times
-        .findIndex((t: dateTime) => compareDate(curDate, t.date)) : -1
+    const songTimeDictFiltred = useDate ? songTimeDict.filter((std: songTimeStat) => std.times.findIndex((t: dateTime) => compareDate(curDate, t.date)) != -1) : songTimeDict
+    const songTimeDictMapped = songTimeDictFiltred.map((sts: songTimeStat) => ({ ...sts, times: (useDate ? sts.times.find((dt: dateTime) => compareDate(curDate, dt.date)).time : sts.times.reduce((acc: number, dt: dateTime) => acc + dt.time, 0)) }))
+    if (songTimeDictFiltred.length == 0) useDate = false;  //no date, use alltime
 
-    if (curTimesIdx == -1) useDate = false;  //no date, use alltime
-
-    const getTime = (song: songTimeStat) => { return useDate ? song.times[curTimesIdx].time : song.times.reduce((acc, val) => acc + val.time, 0) }
-
-    const sum = songTimeDict.reduce((acc: number, v: songTimeStat) => acc + getTime(v), 0)
+    const sum = songTimeDictMapped.reduce((acc: number, v: songTimeStat) => acc + v.times, 0)
     const onePercentTrhrueshold = sum * 0.015;
-    const largeSongs = songTimeDict.filter((song: songTimeStat) => getTime(song) >= onePercentTrhrueshold)
-    const smallSongs = songTimeDict.filter((song: songTimeStat) => getTime(song) < onePercentTrhrueshold)
+    const largeSongs = songTimeDictMapped.filter((song: songTimeStat) => song.times >= onePercentTrhrueshold)
+    const smallSongs = songTimeDictMapped.filter((song: songTimeStat) => song.times < onePercentTrhrueshold)
 
     let diagramArray = [...largeSongs]
     if (smallSongs.length > 0) {
-        const allSmallSongs = smallSongs.reduce((acc: number, val: songTimeStat) => acc + getTime(val), 0);
-        diagramArray.push({ video_id: '', name: 'Другие', times: [{ date: { year: 2026, month: 10, day: 2 }, time: allSmallSongs }] })
+        const allSmallSongs = smallSongs.reduce((acc: number, val: songTimeStat) => acc + val.times, 0);
+        diagramArray.push({ video_id: '', name: 'Другие', times: allSmallSongs })
     }
     const chartColors = ['var(--color-blue)', 'var(--color-red)', 'var(--color-peach)', 'var(--color-teal)', 'var(--color-mauve)', 'var(--color-yellow)', 'var(--color-green)', 'var(--color-maroon)', 'var(--color-lavender)', 'var(--color-pink)', 'var(--color-rosewater)'];
 
@@ -73,8 +70,8 @@ function CircleDiagram({ activeSong, curDate }: { curDate: Date, activeSong: son
                 fill="currentColor" stroke="currentColor" stroke-width="0" stroke-linecap=""
                 className="m-auto">
                 {
-                    diagramArray.map((value, idx) => {
-                        const percent = (typeof value.times == 'number' ? value.times : getTime(value) / sum) * 100;
+                    diagramArray.sort((a, b) => b.times - a.times).map((value, idx) => {
+                        const percent = value.times / sum * 100;
                         const dashArray = `${percent} ${circumference} `;
                         const dashOffset = -accumulatedPercent;
                         accumulatedPercent += percent;
@@ -108,7 +105,7 @@ function CircleDiagram({ activeSong, curDate }: { curDate: Date, activeSong: son
                         <text className="text-subtext0 text-[2px]"
                             x="25" y="27"
                             dominantBaseline="central" textAnchor="middle" >
-                            {timeFromSeconds(getTime(activeSong), false)} ({(getTime(activeSong) / sum * 100).toFixed(1)}%)
+                            {timeFromSeconds(activeSong.times, false)} ({(activeSong.times / sum * 100).toFixed(1)}%)
                         </text>
                     )}
                 </g>

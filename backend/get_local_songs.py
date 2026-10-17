@@ -17,6 +17,7 @@ def _get_song_info(file_path: Path):
 
     title = "Неизвестно"
     artist = "Неизвестно"
+    text = ""
     if file_path.suffix.lower() == ".m4a":
         audio = MP4(file_path)
         titles = audio.get("\xa9nam", ["Неизвестно"])
@@ -26,6 +27,7 @@ def _get_song_info(file_path: Path):
     else:
         title = "".join(audio.get("title", ["Неизвестно"]))
         artist = "".join(audio.get("artist", ["Неизвестно"]))
+        text = "".join(audio.get("lyrics-eng", [""]))
     cover_data = ""
     try:
         if file_path.suffix.lower() == ".m4a":
@@ -55,6 +57,7 @@ def _get_song_info(file_path: Path):
         "artist": artist,
         "duration": round(dur),
         "cover_url": cover_data,
+        "text": text,
         "video_id": encoded_id.rstrip(b"=").decode("utf-8"),
     }
 

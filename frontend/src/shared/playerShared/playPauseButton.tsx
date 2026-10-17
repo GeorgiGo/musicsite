@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { PlayPauseSVG } from "../svgIcons"
+import ButtonWithTitle from "../buttonWithTitle";
 /**
  * return a button for `play/pause`
  * @param isPlaying the boolean value that indicates is playing
@@ -20,10 +21,10 @@ export default function PlayPauseButton({ isPlaying, setPlay }) {
     }, [isPlaying]);
 
     return (
-        <button
-            onClick={() => { setPlay(p => !p) }}
-            className='active:scale-80 transition-all duration-200 m-auto text-text hover:bg-surface0 rounded-full w-[2.5vw] h-[2.5vw] mb-[2vh] xl:mb-auto relative'>
+        <ButtonWithTitle onClick={() => { setPlay(p => !p) }}
+            className='relative m-auto active:scale-80 transition-all duration-200 m-auto text-text hover:bg-surface0 rounded-full w-[2.5vw] h-[2.5vw] mb-[2vh] xl:mb-auto relative'
+            title='Пауза/Играть (_)'>
             <PlayPauseSVG ref={PlayPauseSVGRef} />
-        </button>
+        </ButtonWithTitle>
     )
 }

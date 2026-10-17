@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import CommonInformation from "../shared/baseSongInformation";
-import { useAudio } from '../entities/AudioContext';
+import { useAudio } from '../entities/contexts/AudioContext';
 import type { Playlist, SongElement } from '../entities/dataInterfaces';
 import { MusicAPI } from '../entities/api';
 
@@ -63,7 +63,7 @@ function SongMin({ playlistId, id, setCurSong, duration, cover_url, title, artis
 }
 
 
-export default function Playlist({ id, name, songs }: Playlist) {
+export default function PlaylistEl({ id, name, songs }: Playlist) {
     const [isOpened, setOpened] = useState<boolean>(JSON.parse(localStorage.getItem('playlistsState'))?.at(id) || false);
     const [cname, setName] = useState<string>(name)
     const { setCurTrack, updatePlaylists, setPlaylists } = useAudio()
@@ -77,21 +77,20 @@ export default function Playlist({ id, name, songs }: Playlist) {
         updatePlaylists()
     }, [])
     return (
-        <div data-id={id} className='playlist hover:border-sky mb-4 border-surface1 border-2 shadow-[0_0_6px_var(--color-mantle)]'>
+        <div data-id={id} className='playlist hover:border-sky mb-4 border-surface1 rounded-2xl overflow-hidden border-2 '>
             <div onClick={() => { setOpenedState(); }} className='flex bg-surface1 p-1'>
                 <input onInput={(e) => MusicAPI.changePlaylist(id, e.target.value).catch(err => console.error(err))}
                     onClick={e => e.stopPropagation()}
                     onChange={e => setName(e.target.value)}
                     value={cname}
-                    className='outline-0 no-underline select-none ml-2 text-text font-bold' />
+                    className='outline-0 no-underline select-none pl-2 text-text font-bold' />
                 <button onClick={e => {
                     if (confirm('Удалить плейлист: ' + cname)) {
                         MusicAPI.removePlayist(id).catch(err => console.error(err))
-                        setPlaylists(prev => prev.filter(el => el.id !== id))
+                        setPlaylists((prev: Playlist[]) => prev.filter(el => el.id !== id))
                     }
                     e.stopPropagation()
                 }} className='pl-1 pr-2 rounded-full hover:bg-overlay0 hover:scale-120 transition-all duration-200 mr-2 text-red ml-auto'></button>
-                <button className='select-none text-text ml-2 mr-2'>&gt;</button>
             </div>
             {isOpened ? <div className='p-2 w-full bg-mantle max-h-[30vw] overflow-auto'>
                 {songs?.map((song, idx) => <SongMin key={idx} setCurSong={async () => { await setCurTrack(idx, songs) }} playlistId={id} {...song} />)}

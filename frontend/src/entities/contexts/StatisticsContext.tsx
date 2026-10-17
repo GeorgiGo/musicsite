@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useRef } from "react";
-import { useLSWithTimeout } from "./useLocalStorage";
+import { useLSWithTimeout } from "../hooks/useLocalStorage";
 import { useAudio } from "./AudioContext";
-import { MusicAPI } from "./api";
-import type { songTimeStat } from "./dataInterfaces";
+import { MusicAPI } from "../api";
+import type { songTimeStat } from "../dataInterfaces";
 
 
 const StatisticsContext = createContext(null)

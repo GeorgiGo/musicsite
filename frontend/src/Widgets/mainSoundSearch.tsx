@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { CrossSVG, SearchSVG, UpdateSVG } from '../shared/svgIcons';
+import { SearchSVG, UpdateSVG } from '../shared/svgIcons';
 import { SearchDropdown } from '../shared/searchDropdown';
 import type { Song } from '../entities/dataInterfaces';
 import { MusicAPI } from '../entities/api';
+import { useAudio } from '../entities/contexts/AudioContext';
+import AddNewSongs from './addSongFiles';
 
 function SearchClearButton({ setSearch }) {
     return (<button onClick={() => setSearch('')} className="peer right-0 hover:bg-red select-none absolute bg-maroon w-[1.2vw] text-center text-mantle"></button>)
@@ -19,28 +21,28 @@ export default function SoundSearch({ setSongs }) {
     const [searchSuggetions, setSearchSuggetions] = useState<string[]>([]);
     const [isSearching, setSearching] = useState<boolean>(false);
     const inputElRef = useRef<HTMLInputElement>(null);
+    const { setMainQueue } = useAudio();
+    useEffect(() => {
+        MusicAPI.searchLocalSongs(search).then(s => setMainQueue(s)).catch(err => console.log(err))
+    }, []);
     const searchSongs = async () => {
         setSearching(true)
-        try {
-            const songs = await MusicAPI.searchLocalSongs(search)
-            setISongs(songs)
-        } catch (e) { console.error('Error while /search_local fetch: ', e); }
+        await MusicAPI.searchLocalSongs(search).then(s => setISongs(s)).catch(err => console.log(err))
         setSearching(false)
     }
     useEffect(() => { searchSongs() }, [])
     useEffect(() => {
         if (search) {
-            let array = [...new Set(
-                [...iSongs.map(song => song.title), ...iSongs.map(song => song.artist)]
-            )].filter(el => el.toLowerCase().includes(search.toLowerCase().split(' ').at(-1)))
-                .slice(0, 10).map(el => [...search.toLowerCase().split(' ').slice(0, -1), el].join(' '))
+            let array = [...new Set([...iSongs.map(song => song.title), ...iSongs.map(song => song.artist)])]
+                .filter(el => el.toLowerCase().includes(search.toLowerCase().split(' ').at(-1)))
+                .slice(0, 10)
+                .map(el => [...search.toLowerCase().split(' ').slice(0, -1), el].join(' '))
             setSearchSuggetions(array)
         }
         else
             setSearchSuggetions([])
         function filterSongs() {
-            if (!search)
-                return iSongs
+            if (!search) return iSongs
             return iSongs.filter(song => [...search.toLowerCase()].every(l => song.title.toLowerCase().includes(l) || song.artist.toLowerCase().includes(l)))
         }
         setSongs(filterSongs)
@@ -49,8 +51,11 @@ export default function SoundSearch({ setSongs }) {
     return (
         <>
             {isSearching ? <div className="z-1000 backdrop-blur-[6px] w-full text-shadow-[0_0_22px_#89B4FA] fixed top-0 left-0 h-full text-blue  text-[xx-large] text-center pt-[33vh]">Загрузка...</div> : <></>}
-            <div className="z-2 m-auto mt-[1vh] relative w-fill" onBlur={() => setFocused(false)}>
+            <div className="z-2 m-auto mt-[1vh] relative w-fill " onBlur={() => setFocused(false)}>
                 <div className="relative w-4/5 m-auto">
+                    <div className='absolute top-0 -left-2 -translate-x-[100%]'>
+                        <AddNewSongs setSongs={setSongs} />
+                    </div>
                     <div onClick={() => searchSongs()} className="absolute left-0 select-none text-mantle bg-blue absolute w-fit p-1 text-center"><SearchSVG /></div>
                     {search ? <SearchClearButton setSearch={() => setSearch('')} /> : <></>}
                     <input ref={inputElRef} onFocus={() => setFocused(true)} placeholder='Поиск...' type="text" className="font-bold peer-hover:line-through hover:outline-2 focus:outline-2 focus:outline-mauve outline-blue outline-0 text-text pl-[8vw] xl:pl-[1.5vw] search-input w-1/1 bg-surface0 not-placeholder-shown:bg-surface1" onChange={(e) => { setSearch(e.target.value); }} value={search} />

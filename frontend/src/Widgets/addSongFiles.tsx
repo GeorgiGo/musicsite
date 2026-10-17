@@ -1,6 +1,5 @@
 import { useRef } from "react";
 import { MusicAPI } from "../entities/api";
-import { PlusSVG } from "../shared/svgIcons";
 
 export default function AddNewSongs({ setSongs }) {
     const formRef = useRef<HTMLFormElement>(null);
@@ -19,13 +18,12 @@ export default function AddNewSongs({ setSongs }) {
         } catch (e) { console.error(e); }
     }
     return (
-        <div className='relative mt-[2vh] xl:mt-[2vh] w-full h-[2.5vw]'>
-            <form onSubmit={handleSubmit} action="post" ref={formRef} className="m-auto w-fit">
-                <input onInput={handleSubmit} ref={inputRef} name="songs" id="addSongs" className='hover:scale-110 bg-blue p-2 transtion-all duration-200' type="file" multiple={true} accept='.mp3, .m4a' />
-                <button type='submit' className='hidden active:scale-80 overflow-hidden m-auto ml-2 relative bg-green p-2 pl-8 pr-8 transtion-all duration-200 group'>
-                    <span className='absolute top-[-60%] left-1 group-hover:top-1 font-bold transtion-all duration-300'>добавить</span>
-                    <PlusSVG className='group-hover:translate-y-2/1 scale-160 transtion-all duration-200' />
-                </button>
+        <div className='relative w-fit '>
+            <form onSubmit={handleSubmit} action="post" ref={formRef} className="w-fit">
+                <label>
+                    <input onInput={handleSubmit} ref={inputRef} name="songs" id="addSongs" className='sr-only' type="file" multiple={true} accept='.mp3, .m4a' />
+                    <span className="hover:scale-110 bg-blue transtion-all duration-200 px-2">+ песня</span>
+                </label>
             </form>
         </div>
 

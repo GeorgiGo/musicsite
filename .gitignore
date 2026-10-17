@@ -1,4 +1,6 @@
-beckend/__pycache__
-beckend/songs_library/
+backend/__pycache__/
+backend/songs_library/
+backend/.alembic/
+backend/alembic.ini
 react-site/node_modules/
 old/

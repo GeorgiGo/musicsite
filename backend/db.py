@@ -24,6 +24,7 @@ class SongBase(SQLModel):
     video_id: str = Field()
     artist: str = Field()
     title: str = Field()
+    text: str = Field()
     cover_url: str = Field()
     stream_url: str = Field()
     duration: int = Field()
@@ -37,6 +38,7 @@ class SongUpdate(SongBase):
     video_id: str | None = None
     artist: str | None = None
     title: str | None = None
+    text: str | None = None
     cover_url: str | None = None
     stream_url: str | None = None
     duration: int | None = None

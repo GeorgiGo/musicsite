@@ -1,16 +1,16 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react'
-import { useAudio } from '../entities/AudioContext';
+import { useAudio } from '../entities/contexts/AudioContext';
 import { RepeatSVG, ShuffleSVG } from '../shared/svgIcons';
 import ProgressBar from '../shared/playerShared/progressBar';
-import useLocalStorage, { useLSWithTimeout } from '../entities/useLocalStorage';
+import useLocalStorage, { useLSWithTimeout } from '../entities/hooks/useLocalStorage';
 import VolumeButton from '../shared/playerShared/volumeButton';
 import PlayPauseButton from '../shared/playerShared/playPauseButton';
 import { handleKeyWithKeyMap } from '../entities/keyHandler';
-import { useStatistics } from '../entities/StatisticsContext';
+import ButtonWithTitle from '../shared/buttonWithTitle';
 
 
 export default function MainPlayer() {
-    const { setPlay, currentSong, audioRef, setIsShuffled, isPlaying, queue, currentSongIdx, isShuffled } = useAudio()
+    const { setPlay, currentSong, audioRef, setIsShuffled, isPlaying, queue, currentSongIdx, isShuffled, loop, setIsLoop } = useAudio()
     const [currentTime, setCurrentTime] = useLSWithTimeout('time', 7000, 0);
     const [currentVolume, setCurrentVolume] = useLocalStorage<number>('volume', 1);
     useEffect(() => { setPlay(true) }, [currentSong?.stream_url])
@@ -22,15 +22,15 @@ export default function MainPlayer() {
         const timeUpdateHandler = (e) => { setCurrentTime(audioRef.current?.currentTime); }
         const volumeChangeHandler = (e) => { setCurrentVolume(audioRef.current?.volume); }
         const keyMap = {
-            "Space": e => { e.preventDefault(); setPlay(p => !p) },
-            "Digit0": e => setTime(0),
-            "ArrowLeft": e => setTime(audioRef.current?.currentTime - 5),
-            "ArrowRight": e => setTime(audioRef.current?.currentTime + 5),
-            "ArrowUp": e => { e.preventDefault(); setVolume(Math.min(audioRef.current?.volume + 0.05, 1)) },
-            "ArrowDown": e => { e.preventDefault(); setVolume(Math.max(audioRef.current?.volume - 0.05, 0)) },
-            "KeyM": e => { if (audioRef.current) audioRef.current.muted = !audioRef.current.muted },
-            "KeyR": e => { if (audioRef.current) { audioRef.current.loop = !audioRef.current.loop; localStorage.setItem('loop', audioRef.current.loop) } },
-            "KeyS": e => setIsShuffled(prev => !prev)
+            "Space": (e: KeyboardEvent) => { e.preventDefault(); setPlay((p: boolean) => !p) },
+            "Digit0": (e: KeyboardEvent) => setTime(0),
+            "ArrowLeft": (e: KeyboardEvent) => setTime(audioRef.current?.currentTime - 5),
+            "ArrowRight": (e: KeyboardEvent) => setTime(audioRef.current?.currentTime + 5),
+            "ArrowUp": (e: KeyboardEvent) => { e.preventDefault(); setVolume(Math.min(audioRef.current?.volume + 0.05, 1)) },
+            "ArrowDown": (e: KeyboardEvent) => { e.preventDefault(); setVolume(Math.max(audioRef.current?.volume - 0.05, 0)) },
+            "KeyM": (e: KeyboardEvent) => { if (audioRef.current) audioRef.current.muted = !audioRef.current.muted },
+            "KeyR": (e: KeyboardEvent) => { if (audioRef.current) { audioRef.current.loop = !audioRef.current.loop; localStorage.setItem('loop', audioRef.current.loop) } },
+            "KeyS": (e: KeyboardEvent) => setIsShuffled((prev: boolean) => !prev)
         }
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.target.tagName == "INPUT") return;
@@ -53,8 +53,8 @@ export default function MainPlayer() {
             <img className='flex h-[8vh] w-[8vh] xl:h-[5vw] xl:w-[5vw]  m-[1vw] mt-auto mb-auto' src={currentSong?.cover_url == "" ? "null" : currentSong?.cover_url} alt="" />
             <div className='flex flex-1 xl:w-[30vw] flex-row m-auto ml-0 mr-0'>
                 <div className='flex w-[60vw] xl:w-[20vw] flex-col'>
-                    <span className='text-text font-bold text-auto'>{currentSong?.title}</span>
-                    <span className='text-subtext0 text-[small]'>{currentSong?.artist}</span>
+                    <span className='text-text font-bold text-auto xl:text-[x-large]'>{currentSong?.title}</span>
+                    <span className='text-subtext0 text-[small] xl:text-xl'>{currentSong?.artist}</span>
                 </div>
                 {!audioRef.current?.loop ? <div className='hidden xl:flex w-[60vw] xl:w-[20vw] flex-col m-auto mr-0 ml-2'>
                     {isShuffled ? <span className='text-text font-bold text-[small]'>?</span> : <>
@@ -64,15 +64,18 @@ export default function MainPlayer() {
                 }
             </div >
             <div className='text-text m-auto text-center flex-0_1 xl:w-[10vw] flex justify-center'>
-                <button onClick={() => setIsShuffled(prev => !prev)}
-                    style={{ color: (isShuffled ? 'var(--color-mauve)' : 'var(--color-subtext0)') }}
-                    className='w-[1.8vw] h-[1.8vw] m-auto text-[large] mr-0 hover:bg-surface0 rounded-full transition-bg duration-200 active:scale-80'><ShuffleSVG />
-                </button>
+                <ButtonWithTitle title='Случайный порядок (S)' onClick={() => setIsShuffled((prev: boolean) => !prev)}
+                    className='relative m-auto mr-0'
+                    style={{ color: (isShuffled ? 'var(--color-mauve)' : 'var(--color-subtext0)') }}>
+                    <ShuffleSVG />
+                </ButtonWithTitle>
                 <PlayPauseButton setPlay={setPlay} isPlaying={isPlaying} />
-                <button onClick={() => { audioRef.current.loop = !audioRef.current.loop; localStorage.setItem('loop', audioRef.current.loop) }}
-                    style={{ color: (audioRef.current?.loop ? 'var(--color-mauve)' : 'var(--color-subtext0)') }}
-                    className='active:scale-80 transition-bg duration-200 w-[1.8vw] h-[1.8vw] mb-[2vh] xl:mb-auto hover:bg-surface0 rounded-full m-auto text-[large] ml-0' ><RepeatSVG />
-                </button>
+                <ButtonWithTitle onClick={() => setIsLoop((p: boolean) => !p)}
+                    title='Повтор (R)'
+                    className='relative m-auto ml-0'
+                    style={{ color: (audioRef.current?.loop ? 'var(--color-mauve)' : 'var(--color-subtext0)') }}>
+                    <RepeatSVG />
+                </ButtonWithTitle>
             </div>
             <div className="flex-1 hidden xl:flex ">
                 <VolumeButton currentVolume={currentVolume} audioRef={audioRef} />

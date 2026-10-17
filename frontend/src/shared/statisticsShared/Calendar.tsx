@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowRightSVG, ArrowLeftSVG } from "../svgIcons";
+import { useStatistics } from "../../entities/contexts/StatisticsContext";
+import type { dateTime, songTimeStat } from "../../entities/dataInterfaces";
 
 export default function Calendar({ setNewDate }) {
     const [opened, setOpened] = useState<boolean>(false);
@@ -7,20 +9,7 @@ export default function Calendar({ setNewDate }) {
     const [curMonth, setMonth] = useState<number>(new Date().getMonth());
     const [curDay, setDay] = useState<number>(new Date().getDate());
     const [lastY, setLastY] = useState<number>(2026);
-    const months = [
-        'Январь',
-        'Февраль',
-        'Март',
-        'Апрель',
-        'Май',
-        'Июнь',
-        'Июль',
-        'Август',
-        'Сентябрь',
-        'Октябрь',
-        'Ноябрь',
-        'Декабрь'
-    ];
+    const months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
     const setDate = (e) => {
         if (e == -1) {
             setNewDate(new Date(-1, curMonth, curDay))
@@ -50,13 +39,17 @@ export default function Calendar({ setNewDate }) {
             d.getMonth() == curMonth &&
             d.getDate() == day
     }
+    const { songTimeDict } = useStatistics()
+    const flatDate = (y: number, m: number, d: number) => `${d}_${m}_${y}`
+    const dates = useMemo(() => songTimeDict.map((sts: songTimeStat) => sts.times.map((dt: dateTime) => flatDate(dt.date.year, dt.date.month, dt.date.day))).flat(), [songTimeDict])
+    const checkDayInSTD = (day: number) => dates.includes(flatDate(curYear, curMonth, day))
     return (
-        <div className="absolute top-2 right-2">
+        <div className="lg:text-[large] absolute top-2 right-2">
             <div
                 style={{ background: opened ? 'var(--color-surface0)' : 'unset' }}
                 className="bg-mantle hover:bg-surface0! p-1 pr-4 pl-4 rounded-t-lg" onClick={() => setOpened(p => !p)}>
                 {curYear == -1 ? <h1 className="select-none">___ Все время __</h1> :
-                    <h1 className="select-none">{curDay} {months[curMonth].padStart(8, '_')} {curYear}</h1>}
+                    <pre className="select-none">{curDay.toString().padStart(2, ' ')} {months[curMonth].padStart(8, ' ')} {curYear}</pre>}
             </div>
             {opened && <div className="border-surface0 border-3">
                 <div className="items-center flex">
@@ -67,17 +60,17 @@ export default function Calendar({ setNewDate }) {
                 <div className="grid grid-cols-8">
                     {Array.from({ length: new Date(curYear, curMonth + 1, 0).getDate() }, (_, idx) => idx + 1)
                         .map(day =>
-                            <label key={day} className="active:text-blue">
+                            <label key={day} className="daylabel active:text-blue relative text-center">
                                 <input
                                     onChange={setDate}
                                     checked={curDay == day} type="radio" name="date" className="sr-only peer"
                                     value={day} />
                                 <span
                                     style={{
-                                        color: checkNowDay(day) ? 'var(--color-text)' : 'var(--color-subtext1)',
-                                        fontWeight: checkNowDay(day) ? 'bold' : 'unset'
+                                        color: checkNowDay(day) ? 'var(--color-sapphire)' : 'var(--color-subtext0)',
+                                        fontWeight: checkNowDay(day) ? 'bold' : 'unset',
                                     }}
-                                    className="peer-checked:text-shadow-[0_0_3px_var(--color-blue)] peer-checked:font-bold! hover:font-bold! peer-checked:text-blue! hover:text-text!"> {day}</span>
+                                    className={checkDayInSTD(day) ? 'wasmusic' : '' + " peer-checked:text-shadow-[0_0_3px_var(--color-blue)] peer-checked:font-bold! hover:font-bold! peer-checked:text-blue! hover:text-text!"}> {day}</span>
                             </label>)}
                     <label className="col-span-8 text-center">
                         <input

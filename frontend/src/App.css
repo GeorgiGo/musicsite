@@ -30,6 +30,26 @@
     --color-crust: #11111b;
 }
 
+.wasmusic::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 6%;
+    transform: translateX(-50%);
+    width: 40%;
+    border-radius: 15px;
+    height: 2px;
+    background: var(--color-peach);
+}
+
+.wasmusic:hover {
+    color: var(--color-text) !important;
+}
+
+.daylabel>input:checked+span {
+    color: var(--color-blue) !important;
+}
+
 :root {
     --color-rosewater: #f5e0dc;
     --color-flamingo: #f2cdcd;

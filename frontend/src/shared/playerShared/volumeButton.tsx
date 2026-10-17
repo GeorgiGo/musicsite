@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { VolSVG } from "../svgIcons";
+import ButtonWithTitle from "../buttonWithTitle";
 
 /**
  * return a button for volume, it indicates currentVolume & can mute audio
@@ -30,7 +31,7 @@ export default function VolumeButton({ currentVolume, audioRef }) {
         }
     }, [currentVolume, audioRef.current?.muted])
     return (
-        < button onClick={() => audioRef.current.muted = !audioRef.current.muted
-        } className='hover:bg-surface0 h-fit m-auto p-2 pt-3 pb-3 active:scale-80 transition-all duration-200 rounded-full w-[2vw] mr-0 text-text' > <VolSVG ref={volSVGRef} /> </button >
+        < ButtonWithTitle title="Звук (m)" onClick={() => audioRef.current.muted = !audioRef.current.muted
+        } className=' relative hover:bg-surface0 h-fit m-auto p-3 pt-3 pb-3 active:scale-80 transition-all duration-200 rounded-full w-[2vw] mr-0 text-text' > <VolSVG ref={volSVGRef} /> </ButtonWithTitle >
     )
 }
