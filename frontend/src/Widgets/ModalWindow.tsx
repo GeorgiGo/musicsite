@@ -8,7 +8,7 @@ interface ModalProps {
     title: string;
     children: React.ReactNode;
 }
-export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, children, ...props }: ModalProps) {
     useEffect(() => {
         if (!isOpen) return;
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -20,14 +20,14 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
     if (!isOpen) return null
     return (
         createPortal(
-            <div
+            <div onMouseDown={(e) => e.stopPropagation()} onMouseMove={(e) => e.stopPropagation()}
                 onClick={onClose}
                 className="fixed z-[8000] w-screen h-screen top-0 left-0 backdrop-blur-sm animate-fade-in flex justify-center items-center">
 
-                <div onClick={(e) => e.stopPropagation()}
-                    className="z-[8000] fixed left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-mantle border border-surface1 p-6 rounded-2xl shadow-2xl transition-all scale-100"
+                <div onMouseDown={(e) => e.stopPropagation()} onMouseMove={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}
+                    className="z-[8000] fixed left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-fit bg-mantle border border-surface1 p-6 rounded-2xl shadow-2xl transition-all scale-100"
                 >
-                    <div className="flex items-center justify-between mb-4 pb-2 border-b border-surface0">
+                    <div onClick={e => e.stopPropagation()} className="flex items-center justify-between mb-4 pb-2 border-b border-surface0">
                         <h3 className="text-lg font-bold text-text">{title}</h3>
                         <ButtonWithTitle
                             onClick={onClose}

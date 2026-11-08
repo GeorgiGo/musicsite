@@ -79,7 +79,7 @@ export default function PlaylistEl({ id, name, songs }: Playlist) {
     return (
         <div data-id={id} className='playlist hover:border-sky mb-4 border-surface1 rounded-2xl overflow-hidden border-2 '>
             <div onClick={() => { setOpenedState(); }} className='flex bg-surface1 p-1'>
-                <input onInput={(e) => MusicAPI.changePlaylist(id, e.target.value).catch(err => console.error(err))}
+                <input onInput={(e) => MusicAPI.changePlaylist(id, e.target.value).then(() => updatePlaylists()).catch(err => console.error(err))}
                     onClick={e => e.stopPropagation()}
                     onChange={e => setName(e.target.value)}
                     value={cname}

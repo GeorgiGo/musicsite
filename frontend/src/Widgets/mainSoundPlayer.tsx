@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react'
-import { useAudio } from '../entities/contexts/AudioContext';
-import { RepeatSVG, ShuffleSVG } from '../shared/svgIcons';
+import { useAudio, type stopPlayAfter } from '../entities/contexts/AudioContext';
+import { CircleStopSCG, RepeatSVG, ShuffleSVG } from '../shared/svgIcons';
 import ProgressBar from '../shared/playerShared/progressBar';
 import useLocalStorage, { useLSWithTimeout } from '../entities/hooks/useLocalStorage';
 import VolumeButton from '../shared/playerShared/volumeButton';
@@ -10,7 +10,7 @@ import ButtonWithTitle from '../shared/buttonWithTitle';
 
 
 export default function MainPlayer() {
-    const { setPlay, currentSong, audioRef, setIsShuffled, isPlaying, queue, currentSongIdx, isShuffled, loop, setIsLoop } = useAudio()
+    const { setPlay, currentSong, audioRef, setIsShuffled, isPlaying, queue, currentSongIdx, isShuffled, loop, setIsLoop, setStopPlayAfter, stopPlayAfter } = useAudio()
     const [currentTime, setCurrentTime] = useLSWithTimeout('time', 7000, 0);
     const [currentVolume, setCurrentVolume] = useLocalStorage<number>('volume', 1);
     useEffect(() => { setPlay(true) }, [currentSong?.stream_url])
@@ -19,21 +19,23 @@ export default function MainPlayer() {
     const setVolume = (vol: number) => { audioRef.current.volume = Math.max(Math.min(1, vol), 0) }
 
     useEffect(() => {
-        const timeUpdateHandler = (e) => { setCurrentTime(audioRef.current?.currentTime); }
-        const volumeChangeHandler = (e) => { setCurrentVolume(audioRef.current?.volume); }
+        const timeUpdateHandler = () => { setCurrentTime(audioRef.current?.currentTime); }
+        const volumeChangeHandler = () => { setCurrentVolume(audioRef.current?.volume); }
         const keyMap = {
             "Space": (e: KeyboardEvent) => { e.preventDefault(); setPlay((p: boolean) => !p) },
-            "Digit0": (e: KeyboardEvent) => setTime(0),
-            "ArrowLeft": (e: KeyboardEvent) => setTime(audioRef.current?.currentTime - 5),
-            "ArrowRight": (e: KeyboardEvent) => setTime(audioRef.current?.currentTime + 5),
+            "Digit0": () => setTime(0),
+            "ArrowLeft": () => setTime(audioRef.current?.currentTime - 5),
+            "ArrowRight": () => setTime(audioRef.current?.currentTime + 5),
             "ArrowUp": (e: KeyboardEvent) => { e.preventDefault(); setVolume(Math.min(audioRef.current?.volume + 0.05, 1)) },
             "ArrowDown": (e: KeyboardEvent) => { e.preventDefault(); setVolume(Math.max(audioRef.current?.volume - 0.05, 0)) },
-            "KeyM": (e: KeyboardEvent) => { if (audioRef.current) audioRef.current.muted = !audioRef.current.muted },
-            "KeyR": (e: KeyboardEvent) => { if (audioRef.current) { audioRef.current.loop = !audioRef.current.loop; localStorage.setItem('loop', audioRef.current.loop) } },
-            "KeyS": (e: KeyboardEvent) => setIsShuffled((prev: boolean) => !prev)
+            "KeyM": () => { if (audioRef.current) audioRef.current.muted = !audioRef.current.muted },
+            "KeyR": () => setIsLoop((p: boolean) => !p),
+            "KeyS": () => setIsShuffled((prev: boolean) => !prev),
+            "KeyC": () => setStopPlayAfter((prev: stopPlayAfter) => ({ 'None': 'AfterThis', 'AfterThis': 'AfterSecondSong', 'AfterSecondSong': 'None' }[prev]))
         }
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.target.tagName == "INPUT") return;
+            const trg = e.target as HTMLElement
+            if (trg.tagName == "INPUT") return;
             handleKeyWithKeyMap(e, keyMap)
         }
         setTime(currentTime)
@@ -51,12 +53,12 @@ export default function MainPlayer() {
     return (
         <div className='z-10 backdrop-blur-[8px] fixed flex-1 bottom-0 flex bg-[#1818259f] w-full h-[10vh] content-center'>
             <img className='flex h-[8vh] w-[8vh] xl:h-[5vw] xl:w-[5vw]  m-[1vw] mt-auto mb-auto' src={currentSong?.cover_url == "" ? "null" : currentSong?.cover_url} alt="" />
-            <div className='flex flex-1 xl:w-[30vw] flex-row m-auto ml-0 mr-0'>
-                <div className='flex w-[60vw] xl:w-[20vw] flex-col'>
-                    <span className='text-text font-bold text-auto xl:text-[x-large]'>{currentSong?.title}</span>
-                    <span className='text-subtext0 text-[small] xl:text-xl'>{currentSong?.artist}</span>
+            <div className='flex flex-1 2xl:w-[30vw] flex-row m-auto mx-0'>
+                <div className='flex flex-col w-full'>
+                    <span className='text-text font-bold text-xl 2xl:text-[x-large]'>{currentSong?.title}</span>
+                    <span className='text-subtext0 text-[small] 2xl:text-xl'>{currentSong?.artist}</span>
                 </div>
-                {!audioRef.current?.loop ? <div className='hidden xl:flex w-[60vw] xl:w-[20vw] flex-col m-auto mr-0 ml-2'>
+                {!audioRef.current?.loop ? <div className='xl:flex w-full flex-col m-auto mr-0 ml-2'>
                     {isShuffled ? <span className='text-text font-bold text-[small]'>?</span> : <>
                         <span className='text-text font-bold text-[medium]'>{queue[(currentSongIdx + 1) % queue.length]?.title}</span>
                         <span className='text-subtext0 text-[x-small]'>{queue[(currentSongIdx + 1) % queue.length]?.artist}</span></>}
@@ -64,20 +66,26 @@ export default function MainPlayer() {
                 }
             </div >
             <div className='text-text m-auto text-center flex-0_1 xl:w-[10vw] flex justify-center'>
+                <ButtonWithTitle title={`Остановить после ${stopPlayAfter} (C)`}
+                    onClick={() => setStopPlayAfter((prev: stopPlayAfter) => ({ 'None': 'AfterThis', 'AfterThis': 'AfterSecondSong', 'AfterSecondSong': 'None' }[prev]))}
+                    className='relative m-auto mr-4 2xl:mr-0'
+                    style={{ color: (stopPlayAfter !== 'None' ? (stopPlayAfter == 'AfterSecondSong' ? 'var(--color-peach)' : 'var(--color-sky)') : 'var(--color-subtext0)') }}>
+                    <CircleStopSCG className="scale-140 m-auto" />
+                </ButtonWithTitle>
                 <ButtonWithTitle title='Случайный порядок (S)' onClick={() => setIsShuffled((prev: boolean) => !prev)}
-                    className='relative m-auto mr-0'
+                    className='relative m-auto mr-4 2xl:mr-0'
                     style={{ color: (isShuffled ? 'var(--color-mauve)' : 'var(--color-subtext0)') }}>
                     <ShuffleSVG />
                 </ButtonWithTitle>
                 <PlayPauseButton setPlay={setPlay} isPlaying={isPlaying} />
                 <ButtonWithTitle onClick={() => setIsLoop((p: boolean) => !p)}
                     title='Повтор (R)'
-                    className='relative m-auto ml-0'
-                    style={{ color: (audioRef.current?.loop ? 'var(--color-mauve)' : 'var(--color-subtext0)') }}>
+                    className='relative m-auto ml-4 2xl:ml-0'
+                    style={{ color: (loop ? 'var(--color-green)' : 'var(--color-subtext0)') }}>
                     <RepeatSVG />
                 </ButtonWithTitle>
             </div>
-            <div className="flex-1 hidden xl:flex ">
+            <div className="flex-1 hidden 2xl:flex ">
                 <VolumeButton currentVolume={currentVolume} audioRef={audioRef} />
                 <ProgressBar valuePreviewFunction={(num) => {
                     return `${Math.round(num * 100)}%`

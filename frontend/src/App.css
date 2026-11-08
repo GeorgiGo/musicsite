@@ -50,6 +50,30 @@
     color: var(--color-blue) !important;
 }
 
+.mainSoundField.show {
+    opacity: 1;
+}
+
+.mainSoundField.show:hover {
+    opacity: 1;
+}
+
+.mainSoundField.auto {
+    opacity: 0.6;
+}
+
+.mainSoundField.auto:hover {
+    opacity: 1;
+}
+
+.mainSoundField.hide {
+    opacity: 0.2;
+}
+
+.mainSoundField.hide:hover {
+    opacity: 1;
+}
+
 :root {
     --color-rosewater: #f5e0dc;
     --color-flamingo: #f2cdcd;

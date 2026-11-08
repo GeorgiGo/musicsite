@@ -5,6 +5,7 @@ import type { Playlist, SongElement } from "../entities/dataInterfaces";
 import { EditSVG, ListPlusSVG } from "../shared/svgIcons";
 import { MusicAPI } from "../entities/api";
 import Modal from "./ModalWindow";
+import { EditSongModal } from "./EditSongW";
 
 export function SongEl({ isPlaying, video_id, title, artist, cover_url, duration, setCurSong }: SongElement) {
     const [startX, setStartX] = useState<number>(0);
@@ -75,6 +76,8 @@ export function SongEl({ isPlaying, video_id, title, artist, cover_url, duration
         if (!wasDragging) { setCurSong() }
     }
     const [isModalPlaylistOpen, setModalPlaylistOpen] = useState<boolean>(false);
+    const [isModalChangeOpen, setModalChangeOpen] = useState<boolean>(false);
+
     return (
         <div style={{
             pointerEvents: (isPlaylisting ? 'none' : 'auto'),
@@ -92,7 +95,14 @@ export function SongEl({ isPlaying, video_id, title, artist, cover_url, duration
                 onMouseDown={(e) => handleStart(e.clientX, e.clientY)} onClick={onClickSong}
                 className={`transition-colors duration-300 group/card relative rounded-4x1 w-full song top-0 content-center relative flex  bg-${isPlaying ? 'surface0' : 'mantle'} [&:hover:not(:has(.but:hover))]:bg-surface0`}>
                 <Modal
-                    title={`Добавить ${title} в плейлист ...`}
+                    title={`Изменение '${title}'`}
+                    isOpen={isModalChangeOpen} onClose={() => setModalChangeOpen(false)}>
+                    <div className="flex gap-1 flex-wrap p-1">
+                        <EditSongModal video_id={video_id} closeFunction={() => setModalChangeOpen(false)} artist={artist} title={title} cover_url={cover_url} />
+                    </div>
+                </Modal>
+                <Modal
+                    title={`Добавить '${title}' в плейлист ...`}
                     isOpen={isModalPlaylistOpen} onClose={() => setModalPlaylistOpen(false)}>
                     <div className="flex gap-1 flex-wrap p-1">
                         {playlists.map((pl: Playlist) =>
@@ -115,7 +125,7 @@ export function SongEl({ isPlaying, video_id, title, artist, cover_url, duration
                         <button onClick={e => { e.stopPropagation(); setModalPlaylistOpen(true) }}
                             className="hover:scale-130 pl-1 pr-1 m-3 mr-0 ml-0 select-none text-[large] text-text">
                             <ListPlusSVG /> </button>
-                        <button onClick={e => { e.stopPropagation(); editSong(video_id, title, artist, cover_url); }}
+                        <button onClick={e => { e.stopPropagation(); setModalChangeOpen(true); }}
                             className="hover:scale-130 pl-1 pr-2 m-3 mr-0 ml-0 select-none text-[large] text-text">
                             <EditSVG /></button>
                     </div>
@@ -125,6 +135,5 @@ export function SongEl({ isPlaying, video_id, title, artist, cover_url, duration
             <h1 className='select-none -z-0 absolute right-4 top-1/2 -translate-y-1/2 text-[xx-large] text-mantle'></h1>
         </div >
     )
-    // 󰐒
 }
 

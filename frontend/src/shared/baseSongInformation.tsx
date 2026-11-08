@@ -6,7 +6,7 @@ export default function CommonInformation({ duration, cover_url, title, artist }
 
     return (<>
         <div className='pointer-events-none relative'>
-            <img src={cover_url == "" ? 'null' : cover_url} alt="" className="select-none rounded-[10px] w-[13vw] xl:w-[3vw] " />
+            <img src={cover_url == "" ? 'null' : cover_url} alt="" className="select-none rounded-[10px] w-[5vw] 2xl:w-[3vw] " />
         </div>
         <div className='flex flex-col ml-4 pointer-events-none'>
             <span className='select-none text-text font-bold text-lg'>{title}</span>

@@ -1,7 +1,7 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { MusicAPI } from "../entities/api";
 
-export default function EditSong({ curEditingSong, setCurEditingSong, setEditingSong }) {
+/*export default function EditSong({ curEditingSong, setCurEditingSong, setEditingSong }) {
     const form = useRef(null)
 
     const handleSubmit = async (e) => {
@@ -27,4 +27,35 @@ export default function EditSong({ curEditingSong, setCurEditingSong, setEditing
             <button className="absolute -top-8 -right-8 text-mantle text-[large] bg-red w-fit h-fit pl-2 pr-2 font-bold m-auto hover:scale-120 hover:shadow-[0_0_6px_var(--color-blue)] active:scale-100" onClick={() => setEditingSong(false)}></button>
         </form>
     </div>)
+}*/
+export function EditSongModal({ video_id, closeFunction, artist, title, cover_url, }) {
+    const [curArtist, setCurArtist] = useState<string>(artist);
+    const [curTitle, setCurTitle] = useState<string>(title);
+    const [curCover, setCurCover] = useState(cover_url);
+
+    const form = useRef(null)
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (form.current == null) return;
+        const formData = new FormData(form.current);
+        await MusicAPI.patchSong(video_id, formData).then(r => alert(r.ok ? 'Песня успешно обновлена!' : 'Произошла ошибка')).catch(err => console.error(err))
+        MusicAPI.updateSongLibrary().catch(err => console.error(err))
+    }
+
+    return (
+        <form onSubmit={handleSubmit} method='post' ref={form} className='selection:bg-surface0 selection:text-lavender flex flex-col' id="songForm" encType="multipart/form-data">
+            <div className="flex">
+                <div className="relative">
+                    <input onChange={e => setCurCover(e.target.files[0])} className="w-full h-full absolute top-0 left-0 hidden" name="cover_file" type="file" accept="image/*" />
+                    <img className="w-[6vw] aspect-square" src={typeof curCover === 'object' ? URL.createObjectURL(curCover) : curCover} alt="" />
+                </div>
+                <div className="block m-auto ml-4 mr-4">
+                    <input name="title" className="block text-[x-large] text-text font-bold" type="text" onChange={e => setCurTitle(e.target.value)} value={curTitle} />
+                    <input name="artist" className="block text-[large] text-subtext0" type="text" onChange={e => setCurArtist(e.target.value)} value={curArtist} />
+                </div>
+            </div>
+            <button className="hover:text-shadow-[0_0_2px_var(--color-text)] font-bold hover:border-blue select-none text-text bg-base w-fit mx-auto mt-2 p-1 px-4 rounded-xl border border-surface1" type="submit">Сохранить </button>
+        </form>
+    )
 }

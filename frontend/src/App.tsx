@@ -17,8 +17,9 @@ function MainSoundField({ curTab }) {
     const { setCurTrack, currentSong } = useAudio();
     const [songs, setSongs] = useState<Song[]>([]);
     const setSongFromMain = async (idx) => { await setCurTrack(idx, songs) }
+    const { hideSongList } = useSettings()
 
-    return (<div style={{ display: (curTab === 'MAIN' ? 'block' : 'none') }} className="opacity-90 xl:opacity-60 hover:opacity-95 transition-all duration-300 w-full xl:w-[41vw] m-auto mt-[1vh] p-4 pl-2 xl:pl-6 pr-2 xl:pr-6 backdrop-blur-[2px] bg-mantle block relative ml-[25vw]">
+    return (<div style={{ display: (curTab === 'MAIN' ? 'block' : 'none') }} className={"transition-all duration-300 w-[55vw] 2xl:w-[41vw] m-auto mt-[1vh] p-4 px-6 backdrop-blur-[2px] bg-mantle block relative 2xl:ml-[25vw] mainSoundField " + (hideSongList == 'SHOW' ? 'show' : hideSongList == 'OPACITY' ? 'auto' : 'hide')}>
         <SoundSearch setSongs={setSongs} />
         <ul className="m-[0.5vw] mt-[2vh] -z-9 overflow-y-scroll overflow-x-visible max-h-[72vh] xl:max-h-[81vh] scrollbar-none">
             {songs.map((song, idx) => <SongEl isPlaying={currentSong?.video_id == song.video_id} key={song.stream_url} {...song} setCurSong={() => setSongFromMain(idx)} />)}
@@ -74,27 +75,17 @@ function App() {
     const onKeyDownHndlr = (e: KeyboardEvent) => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
         switch (e.code) {
-            case 'Escape':
-                setCurTab('MAIN')
-                break;
-            case 'KeyI':
-                setCurTab('SETTINGS')
-                break;
-            case 'KeyP':
-                setCurTab('STATISTICS')
-                break;
-            case 'KeyN':
-                setCurTab('MAIN')
-                break;
+            case 'Escape': setCurTab('MAIN'); break;
+            case 'KeyI': setCurTab('SETTINGS'); break;
+            case 'KeyP': setCurTab('STATISTICS'); break;
+            case 'KeyN': setCurTab('MAIN'); break;
         }
     }
     useEffect(() => {
         document.addEventListener('blur', hide)
         document.addEventListener('focus', show)
         document.addEventListener('keydown', onKeyDownHndlr)
-        const onCtx = (e: MouseEvent) => {
-            e.preventDefault();
-        }
+        const onCtx = (e: MouseEvent) => { e.preventDefault(); }
         document.addEventListener('contextmenu', onCtx);
         return () => {
             document.removeEventListener('blur', hide)

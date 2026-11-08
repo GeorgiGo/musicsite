@@ -22,12 +22,13 @@ export default function SettingsField({ curTab, setCurTab }) {
     )
 }
 export function SettingsTab({ curTab }) {
-    const { showVisualizer, setShowVizualizer } = useSettings()
+    const { showVisualizer, setShowVizualizer, hideSongList, setHideSongList } = useSettings()
     return (
         <div style={{ display: (curTab === 'SETTINGS' ? 'block' : 'none') }} className="h-full w-full text-text p-8 mt-3">
             <h1 className="text-xl font-bold m-auto w-fit text-[x-large] text-shadow-[0_0_4px_var(--color-text)] mb-3">-- Настройки --</h1>
-            <div className="m-auto w-fit">
+            <div className="m-auto w-fit flex items-center flex-col">
                 <ChooseSetting showTypes={['Авто', 'Всегда', 'Никогда']} name='Показывать визуализатор' types={['SHOW', 'ALWAYS', 'NEVER']} setFunction={(e) => setShowVizualizer(['SHOW', 'ALWAYS', 'NEVER'][e])} curType={showVisualizer} />
+                <ChooseSetting showTypes={['Показан', 'Полупрозрачен', 'Скрыт']} name='Список песен, когда не в фокусе' types={['SHOW', 'OPACITY', 'HIDE']} setFunction={(e) => setHideSongList(['SHOW', 'OPACITY', 'HIDE'][e])} curType={hideSongList} />
             </div>
         </div>
     )
