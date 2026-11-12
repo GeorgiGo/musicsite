@@ -8,9 +8,10 @@ const SettingsContext = createContext(null)
 export function SettingsProvider({ children }) {
     const [showVisualizer, setShowVizualizer] = useLocalStorage<VisualizerShowModes>('showVisualiser', 'SHOW')
     const [hideSongList, setHideSongList] = useLocalStorage<SongListHideModes>('hideSongList', 'OPACTIY')
+    const [showCoverOnBack, setShowCoverOnBack] = useLocalStorage<boolean>('showCoverOnBack', false);
 
     return (
-        <SettingsContext.Provider value={{ showVisualizer, setShowVizualizer, hideSongList, setHideSongList }}>
+        <SettingsContext.Provider value={{ showVisualizer, showCoverOnBack, setShowCoverOnBack, setShowVizualizer, hideSongList, setHideSongList }}>
             {children}
         </SettingsContext.Provider>
     )

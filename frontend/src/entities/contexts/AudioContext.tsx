@@ -1,7 +1,8 @@
-import { createContext, useState, useContext, useRef, useEffect } from "react";
+import { createContext, useState, useContext, useRef, useEffect, useCallback } from "react";
 import type { Song, Playlist } from "../dataInterfaces";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { MusicAPI } from "../api";
+import { useSettings } from "./SettingsContext";
 
 export type stopPlayAfter = 'None' | 'AfterThis' | 'AfterSecondSong'
 const AudioContext = createContext(null)
@@ -18,6 +19,36 @@ export function AudioProvider({ children }) {
     const audioRef = useRef<HTMLAudioElement>(null);
     const audioSourceRef = useRef<any>(null);
     const updatePlaylists = () => { MusicAPI.getAllPlaylists().then(d => setPlaylists(d)).catch(err => console.error(err)) }
+    const [findIn, setFindIn] = useState<'YANDEX' | 'LOCAL'>('LOCAL');
+
+    const nexTrack = () => {
+        let nextSongIdx = 0;
+        let q = []
+        setCurrentSongIdx((csi: number) => {
+            nextSongIdx = csi + 1;
+            setQueue((prev: Song[]) => {
+                if (nextSongIdx > prev.length) nextSongIdx = 0;
+                q = prev
+                return prev
+            });
+            return csi
+        });
+        setCurTrack(nextSongIdx, q)
+    }
+    const prevTrack = () => {
+        let nextSongIdx = 0;
+        let q = []
+        setCurrentSongIdx((csi: number) => {
+            nextSongIdx = csi - 1;
+            setQueue((prev: Song[]) => {
+                if (nextSongIdx < 0) nextSongIdx = prev.length - 1;
+                q = prev
+                return prev
+            });
+            return csi
+        });
+        setCurTrack(nextSongIdx, q)
+    }
     const nextTrack = () => {
         if (stopPlayAfter == 'AfterThis') {
             setStopPlayAfter('None')
@@ -34,7 +65,6 @@ export function AudioProvider({ children }) {
                 nextSongIdx = (currentSongIdx + 1) % queue.length
             setCurTrack(nextSongIdx)
         }
-
     }
     const setCurTrack = async (idx: number, arr = null) => {
         if (arr !== null) setQueue(arr)
@@ -60,10 +90,14 @@ export function AudioProvider({ children }) {
         setCurTrack(JSON.parse(localStorage.getItem('idx')), JSON.parse(localStorage.getItem('queue')))
         audioRef.current.loop = localStorage.getItem('isLoop') !== null ? JSON.parse(localStorage.getItem('isLoop')) : false
     }, [])
+    const { showCoverOnBack } = useSettings()
     return (
-        <AudioContext.Provider value={{ stopPlayAfter, setStopPlayAfter, setIsShuffled, setMainQueue, mainQueue, isShuffled, audioSourceRef, queue, isPlaying, currentSong, setCurTrack, setQueue, setPlay, audioRef, playlists, setPlaylists, updatePlaylists, currentSongIdx, loop, setIsLoop }}>
+        <AudioContext.Provider value={{ prevTrack, findIn, setFindIn, nexTrack, stopPlayAfter, setStopPlayAfter, setIsShuffled, setMainQueue, mainQueue, isShuffled, audioSourceRef, queue, isPlaying, currentSong, setCurTrack, setQueue, setPlay, audioRef, playlists, setPlaylists, updatePlaylists, currentSongIdx, loop, setIsLoop }}>
             {children}
-            <audio crossOrigin="anonymous" onEnded={() => nextTrack()} ref={audioRef} src={`${import.meta.env.VITE_API_URL}${currentSong?.stream_url}`} />
+            <audio crossOrigin="anonymous" onEnded={() => nextTrack()} ref={audioRef} src={`${import.meta.env.VITE_API_URL}${currentSong?.stream_url == 'yandex' ? `/yandex/stream/${currentSong?.video_id}/stream.mp3` : currentSong?.stream_url}`} />
+            {showCoverOnBack ? <div className="fixed top-0 w-full h-full -z-9900 left-auto">
+                <img src={currentSong?.cover_url} className="h-full m-auto" />
+            </div> : <></>}
         </AudioContext.Provider>
     );
 }

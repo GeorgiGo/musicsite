@@ -23,7 +23,7 @@ export default function AddNewSongs({ setSongs }) {
             <form onSubmit={handleSubmit} action="post" ref={formRef} className="w-fit">
                 <label>
                     <input onInput={handleSubmit} ref={inputRef} name="songs" id="addSongs" className='sr-only' type="file" multiple={true} accept='.mp3, .m4a' />
-                    <span className="hover:scale-110 bg-blue transtion-all duration-200 px-2 flex flex-row">Добавить <MusicSVG className="text-mantle" /> </span>
+                    <span className="hover:scale-110 bg-blue transtion-all duration-200 px-2 flex flex-row">+ <MusicSVG className="text-mantle scale-110 pt-1" /> </span>
                 </label>
             </form>
         </div>

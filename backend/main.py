@@ -1,11 +1,25 @@
 import shutil
-from typing import List, Optional
 import urllib
+import time
+import requests
+import os
 import urllib.parse
-from sqlalchemy.orm import joinedload
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+
+from typing import List, Optional
+
+from fastapi import FastAPI, File, Form, HTTPException, Header, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
+
+from sqlalchemy.orm import joinedload
 from sqlmodel import select
+
+from mutagen.id3 import ID3, TIT2, TPE1
+from mutagen.mp3 import MP3
+from mutagen.id3 import APIC
+from pathlib import Path
+
 from db import (
     PlaylistFull,
     PlaylistUpdate,
@@ -18,13 +32,13 @@ from db import (
     PlaylistCommon,
     Playlist,
 )
-import os
-from fastapi.staticfiles import StaticFiles
-import urllib
-from mutagen.id3 import ID3, TIT2, TPE1
-from mutagen.mp3 import MP3
-from mutagen.id3 import APIC
-from pathlib import Path
+from ya_music import (
+    get_valid_client,
+    get_yandex_client_credentials,
+    ym_getLink,
+    ym_search,
+    ym_search_s,
+)
 
 app = FastAPI()
 
@@ -237,3 +251,133 @@ async def put_stat(stat: StatisticBase, session: SessionDep):
 @app.get("/search_local")
 def search_local(session: SessionDep, search: str = ""):
     return session.exec(select(Song)).all()
+
+
+# === Yandex API ===
+
+
+import json
+import os
+from fastapi import FastAPI, BackgroundTasks
+from yandex_music import Client, OAuthToken
+from ya_music import TOKEN_FILE_PATH, save_token, load_token
+
+# Хранилище текущего состояния авторизации в памяти
+auth_state = {"is_pending": False, "verification_url": None, "user_code": None}
+
+
+def background_device_auth():
+    """Фоновая задача для первичного входа по коду"""
+
+    def on_code(code):
+        auth_state["verification_url"] = code.verification_url
+        auth_state["user_code"] = code.user_code
+
+    try:
+        client = Client()
+        token_info = client.device_auth(on_code=on_code)
+        save_token(
+            OAuthToken(
+                access_token=token_info.access_token,
+                refresh_token=token_info.refresh_token,
+            )
+        )
+    except Exception as e:
+        print(f"Ошибка фоновой авторизации: {e}")
+    finally:
+        auth_state["is_pending"] = False
+        auth_state["verification_url"] = None
+        auth_state["user_code"] = None
+
+
+@app.get("/yandex/auth/status")
+def check_auth_status(background_tasks: BackgroundTasks):
+    """Эндпоинт проверки статуса с автоматическим продлением"""
+    try:
+        # Пытаемся получить рабочий клиент (внутри сработает автопродление, если нужно)
+        client = get_valid_client()
+        return {"authorized": True, "user": client.me.account.login}
+    except HTTPException:
+        # Если авторизации нет и продлить не вышло — запускаем вход по коду
+        pass
+
+    if auth_state["is_pending"]:
+        return {
+            "authorized": False,
+            "verification_url": auth_state["verification_url"],
+            "user_code": auth_state["user_code"],
+        }
+
+    auth_state["is_pending"] = True
+    background_tasks.add_task(background_device_auth)
+
+    for _ in range(10):
+        if auth_state["user_code"]:
+            break
+        time.sleep(0.2)
+
+    return {
+        "authorized": False,
+        "verification_url": auth_state["verification_url"],
+        "user_code": auth_state["user_code"],
+    }
+
+
+@app.get("/yandex/search/")
+def search_yandex(query: str):
+    return ym_search(query)
+
+
+@app.get("/yandex/search_s/")
+def search_s_yandex(query: str):
+    return ym_search_s(query)
+
+
+@app.get("/yandex/stream/{track_id}/stream.mp3")
+def stream_yandex(track_id: str, range: str = Header(None)):
+    try:
+        direct_link = ym_getLink(track_id)
+
+        headers = {
+            "User-Agent": "Yandex-Music-API",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+        }
+
+        # Если браузер просит определенный кусок трека (перемотка), передаем этот заголовок Яндексу
+        if range:
+            headers["Range"] = str(range)
+
+        # 3. Делаем запрос к Яндексу
+        response = requests.get(direct_link, headers=headers, stream=True)
+
+        # Если Яндекс вернул ошибку авторизации/доступа, выводим её в консоль
+        if response.status_code not in [200, 206]:
+            print(f"Ошибка Яндекса: {response.status_code} - {response.text}")
+            raise HTTPException(
+                status_code=response.status_code, detail="Яндекс заблокировал запрос"
+            )
+
+        # 4. Пробрасываем обратно браузеру критически важные аудио-заголовки
+        response_headers = {
+            "Content-Type": "audio/mpeg",
+            "Accept-Ranges": "bytes",
+        }
+        if "Content-Range" in response.headers:
+            response_headers["Content-Range"] = response.headers["Content-Range"]
+        if "Content-Length" in response.headers:
+            response_headers["Content-Length"] = response.headers["Content-Length"]
+
+        # 5. Стримим куски байт напрямую в плеер
+        def iterfile():
+            for chunk in response.iter_content(chunk_size=65536):
+                if chunk:
+                    yield chunk
+
+        return StreamingResponse(
+            iterfile(), status_code=response.status_code, headers=response_headers
+        )
+
+    except Exception as e:
+        print(f"Внутренняя ошибка: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type RefObject } from "react";
 import type { SearchDropdownProps } from "../entities/dataInterfaces";
 import { handleKeyWithKeyMap } from "../entities/keyHandler";
+import type { info } from "console";
 
 /**
  * `SearchDropdown` component for dropdown search suggestions
@@ -16,7 +17,8 @@ export function SearchDropdown({ dropdownData, searchFunc, setValue, search, inp
         'ArrowDown': (e) => { setFocusedSuggestion(prev => (prev + 1) % dropdownData.length) },
         'ArrowUp': e => { setFocusedSuggestion(prev => (prev - 1 + (prev < 1 ? dropdownData.length : 0))); e.preventDefault(); },
         'ctrl+Enter': e => { searchFunc(); e.preventDefault() },
-        'Enter': e => { setValue(dropdownData[focusedSuggestion]); e.preventDefault() }
+        'Enter': e => { setValue(dropdownData[focusedSuggestion]); e.preventDefault() },
+        'Escape': e => { inputElRef.current.blur() }
     }), [dropdownData, focusedSuggestion]);
 
     useEffect(() => {

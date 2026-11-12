@@ -63,8 +63,8 @@ export function SongEl({ isPlaying, video_id, title, artist, cover_url, duration
             setStartX(0);
             setCurrentX(0);
         };
-        document.addEventListener('mousemove', handleMove);
-        document.addEventListener('mouseup', handleEnd);
+        //document.addEventListener('mousemove', handleMove);
+        //document.addEventListener('mouseup', handleEnd);
 
         // Обязательно чистим за собой слушатели, когда dragging завершился или компонент размонтировался
         return () => {

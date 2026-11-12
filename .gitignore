@@ -1,4 +1,5 @@
 backend/__pycache__/
+backend/ya_tok
 backend/songs_library/
 backend/.alembic/
 backend/alembic.ini

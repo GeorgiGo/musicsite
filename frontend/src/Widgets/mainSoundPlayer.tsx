@@ -10,7 +10,7 @@ import ButtonWithTitle from '../shared/buttonWithTitle';
 
 
 export default function MainPlayer() {
-    const { setPlay, currentSong, audioRef, setIsShuffled, isPlaying, queue, currentSongIdx, isShuffled, loop, setIsLoop, setStopPlayAfter, stopPlayAfter } = useAudio()
+    const { nexTrack, prevTrack, setPlay, currentSong, audioRef, setIsShuffled, isPlaying, queue, currentSongIdx, isShuffled, loop, setIsLoop, setStopPlayAfter, stopPlayAfter } = useAudio()
     const [currentTime, setCurrentTime] = useLSWithTimeout('time', 7000, 0);
     const [currentVolume, setCurrentVolume] = useLocalStorage<number>('volume', 1);
     useEffect(() => { setPlay(true) }, [currentSong?.stream_url])
@@ -31,7 +31,9 @@ export default function MainPlayer() {
             "KeyM": () => { if (audioRef.current) audioRef.current.muted = !audioRef.current.muted },
             "KeyR": () => setIsLoop((p: boolean) => !p),
             "KeyS": () => setIsShuffled((prev: boolean) => !prev),
-            "KeyC": () => setStopPlayAfter((prev: stopPlayAfter) => ({ 'None': 'AfterThis', 'AfterThis': 'AfterSecondSong', 'AfterSecondSong': 'None' }[prev]))
+            "KeyC": () => setStopPlayAfter((prev: stopPlayAfter) => ({ 'None': 'AfterThis', 'AfterThis': 'AfterSecondSong', 'AfterSecondSong': 'None' }[prev])),
+            "MediaTrackPrevious": () => prevTrack(),
+            "MediaTrackNext": () => nexTrack(),
         }
         const handleKeyDown = (e: KeyboardEvent) => {
             const trg = e.target as HTMLElement
@@ -62,8 +64,7 @@ export default function MainPlayer() {
                     {isShuffled ? <span className='text-text font-bold text-[small]'>?</span> : <>
                         <span className='text-text font-bold text-[medium]'>{queue[(currentSongIdx + 1) % queue.length]?.title}</span>
                         <span className='text-subtext0 text-[x-small]'>{queue[(currentSongIdx + 1) % queue.length]?.artist}</span></>}
-                </div> : null
-                }
+                </div> : null}
             </div >
             <div className='text-text m-auto text-center flex-0_1 xl:w-[10vw] flex justify-center'>
                 <ButtonWithTitle title={`Остановить после ${stopPlayAfter} (C)`}
@@ -89,7 +90,7 @@ export default function MainPlayer() {
                 <VolumeButton currentVolume={currentVolume} audioRef={audioRef} />
                 <ProgressBar valuePreviewFunction={(num) => {
                     return `${Math.round(num * 100)}%`
-                }} max={1} cur={currentVolume} setValue={setVolume} baseStyle={' w-[10vw] bg-surface0 h-[1vh] m-[2vw] ml-0 mt-auto mb-auto'} innerStyle={'bg-mauve'} />
+                }} max={1} cur={currentVolume} setValue={setVolume} baseStyle={' w-[10vw] bg-surface0 h-[1vh] m-[2vw] ml-0 mt-auto mb-auto'} innerStyle={'bg-mauve rounded-xl'} />
             </div>
             <div className="invisible w-[10vw]"> </div>
             <ProgressBar additionalOnClick={() => { audioRef.current?.play() }} valuePreviewFunction={(num) => {

@@ -12,18 +12,22 @@ import { StatisticsTab } from './Widgets/statistics';
 import { SettingsTab } from './Widgets/settings';
 import { ChartPieSVG, MusicSVG, SettingsSVG } from './shared/svgIcons';
 import { useSettings } from './entities/contexts/SettingsContext';
+import Modal from './Widgets/ModalWindow';
 
 function MainSoundField({ curTab }) {
-    const { setCurTrack, currentSong } = useAudio();
+    const { setCurTrack, currentSong, setPlay } = useAudio();
     const [songs, setSongs] = useState<Song[]>([]);
-    const setSongFromMain = async (idx) => { await setCurTrack(idx, songs) }
+    const setSongFromMain = async (idx) => {
+        await setCurTrack(idx, songs)
+        setPlay(true)
+    }
     const { hideSongList } = useSettings()
 
     return (<div style={{ display: (curTab === 'MAIN' ? 'block' : 'none') }} className={"transition-all duration-300 w-[55vw] 2xl:w-[41vw] m-auto mt-[1vh] p-4 px-6 backdrop-blur-[2px] bg-mantle block relative 2xl:ml-[25vw] mainSoundField " + (hideSongList == 'SHOW' ? 'show' : hideSongList == 'OPACITY' ? 'auto' : 'hide')}>
         <SoundSearch setSongs={setSongs} />
-        <ul className="m-[0.5vw] mt-[2vh] -z-9 overflow-y-scroll overflow-x-visible max-h-[72vh] xl:max-h-[81vh] scrollbar-none">
-            {songs.map((song, idx) => <SongEl isPlaying={currentSong?.video_id == song.video_id} key={song.stream_url} {...song} setCurSong={() => setSongFromMain(idx)} />)}
-        </ul>
+        <div className="m-[0.2vw] mt-[2vh] -z-9 overflow-y-scroll overflow-x-hidden  max-h-[72vh] xl:max-h-[81vh] scrollbar-none">
+            {songs.map((song, idx) => <SongEl isPlaying={currentSong?.video_id == song.video_id} key={song.video_id} {...song} setCurSong={() => setSongFromMain(idx)} />)}
+        </div>
     </div>)
 }
 function PlaylistField({ curTab }) {
@@ -34,7 +38,7 @@ function PlaylistField({ curTab }) {
     return (
         <div className="z-1 w-[25vw] mr-[2.5vw] mt-[1vh]" style={{ display: (curTab === 'MAIN' ? 'block' : 'none') }}>
             <h1 className='select-none pointer-events-none text-blue text-[large] font-bold m-auto w-fit '>󰲸 Плейлисты 󰲸</h1>
-            <div className='overflow-y-scroll max-h-3/4 scrollbar-track-crust scrollbar-thumb-surface1 scrollbar-thin pr-2'>
+            <div className='overflow-y-scroll max-h-2/3 scrollbar-track-crust scrollbar-thumb-surface1 scrollbar-thin pr-2'>
                 {playlists.map((pl: Playlist) => <PlaylistEl key={pl.id} {...pl} />)}
                 <button onClick={() => {
                     if (canCreatePlaylist) {
@@ -44,7 +48,7 @@ function PlaylistField({ curTab }) {
                             .catch(err => console.error(err))
                     }
                 }
-                } className='hover:text-text hover:bg-surface1 w-full text-[large] text-subtext0 bg-surface0'> new </button>
+                } className='hover:text-text hover:bg-surface1 w-full text-[large] rounded-2xl text-subtext0 bg-surface0'>новый плейлист</button>
             </div>
         </div>
     )
@@ -111,8 +115,58 @@ function App() {
                 <SettingsTab curTab={curTab} />
             </div >
             <MainPlayer />
+            <Auth />
         </>
     )
+}
+export interface Authorized {
+    authorized: boolean;
+    verification_url?: string;
+    user_code?: string;
+    user?: string;
+}
+function Auth() {
+    const { findIn, setFindIn } = useAudio()
+    const [showModal, setShowModal] = useState<boolean>(false);
+    const [vUrl, setVUrl] = useState<string>('');
+    const [vCode, setVCode] = useState<string>('');
+    useEffect(() => {
+        if (findIn == 'YANDEX') {
+            MusicAPI.checkYandexAuth().then(d => {
+                if (!d.authorized) {
+                    setTimeout(() => {
+                        MusicAPI.checkYandexAuth().then(d => {
+                            setShowModal(true);
+                            setVUrl(d.verification_url)
+                            setVCode(d.user_code)
+                        })
+                    }, 200);
+                }
+            })
+        }
+    }, [findIn]);
+    const [copied, setCopied] = useState<boolean>(false);
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(vCode);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy text:', err);
+        }
+    };
+    return (<>
+        <Modal title="Авторизуйтесь в яндекс пожалуйста" isOpen={showModal} onClose={() => { setShowModal(false); setFindIn('LOCAL') }}>
+            <div className='flex flex-col'>
+                <a target="_blank" rel="noopener noreferrer" className='bg-blue px-4 py-2 rounded-xl text-mantle font-bold text-xl m-auto' href={vUrl} onClick={() => setShowModal(false)}>Авторизоваться</a>
+                <div style={{ borderColor: (copied ? 'var(--color-green)' : 'var(--color-surface0)') }} className='w-fit m-auto my-4 relative rounded-xl border-2 px-4 py-2 transition-colors transition-200'>
+
+                    <span className='select-none pointer-events-none bg-mantle px-3 text-subtext0 font-bold absolute -top-1/3 left-1/2 -translate-x-1/2'>код</span>
+                    <span className='text-text font-bold text-xl select-none' onClick={handleCopy}>{vCode}</span>
+                </div>
+            </div>
+        </Modal>
+    </>)
 }
 
 export default App

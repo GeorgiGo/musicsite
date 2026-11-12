@@ -22,14 +22,41 @@ export default function SettingsField({ curTab, setCurTab }) {
     )
 }
 export function SettingsTab({ curTab }) {
-    const { showVisualizer, setShowVizualizer, hideSongList, setHideSongList } = useSettings()
+    const { showVisualizer, setShowVizualizer, hideSongList, showCoverOnBack, setShowCoverOnBack, setHideSongList } = useSettings()
     return (
-        <div style={{ display: (curTab === 'SETTINGS' ? 'block' : 'none') }} className="h-full w-full text-text p-8 mt-3">
+        <div style={{ display: (curTab === 'SETTINGS' ? 'block' : 'none') }} className="backdrop-blur-[12px] bg-[#181825af] h-full w-fit m-auto text-text p-8 mt-3">
             <h1 className="text-xl font-bold m-auto w-fit text-[x-large] text-shadow-[0_0_4px_var(--color-text)] mb-3">-- Настройки --</h1>
             <div className="m-auto w-fit flex items-center flex-col">
                 <ChooseSetting showTypes={['Авто', 'Всегда', 'Никогда']} name='Показывать визуализатор' types={['SHOW', 'ALWAYS', 'NEVER']} setFunction={(e) => setShowVizualizer(['SHOW', 'ALWAYS', 'NEVER'][e])} curType={showVisualizer} />
                 <ChooseSetting showTypes={['Показан', 'Полупрозрачен', 'Скрыт']} name='Список песен, когда не в фокусе' types={['SHOW', 'OPACITY', 'HIDE']} setFunction={(e) => setHideSongList(['SHOW', 'OPACITY', 'HIDE'][e])} curType={hideSongList} />
+                <CheckSetting name='Показывать обложку песни на заднем фоне' setFunction={(b: boolean) => setShowCoverOnBack(b)} curType={showCoverOnBack} />
             </div>
+        </div>
+    )
+}
+interface CheckSettingProps {
+    name: string,
+    setFunction: (e: boolean) => void,
+    curType: Boolean
+}
+function CheckSetting({ name, setFunction, curType }: CheckSettingProps) {
+    return (
+        <div className="select-none text-[large] flex flex-row">
+            <span>{name}: </span>
+            <span className="text-blue py-1 px-2 rounded-2xl hover:font-bold hover:bg-surface0">
+                {curType == true ?
+                    <svg className="scale-120" xmlns="http://www.w3.org/2000/svg"
+                        onClick={() => setFunction(false)}
+                        width="24" height="24" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+                        <path d="M20 6 9 17l-5-5" /></svg> :
+                    <svg className="scale-120" xmlns="http://www.w3.org/2000/svg"
+                        onClick={() => setFunction(true)}
+                        width="24" height="24" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" >
+                        <path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>}
+            </span>
         </div>
     )
 }

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import CommonInformation from "../shared/baseSongInformation";
 import { useAudio } from '../entities/contexts/AudioContext';
-import type { Playlist, SongElement } from '../entities/dataInterfaces';
+import type { Playlist, Song, SongElement } from '../entities/dataInterfaces';
 import { MusicAPI } from '../entities/api';
 
-function SongMin({ playlistId, id, setCurSong, duration, cover_url, title, artist, video_id }: SongElement) {
+function SongMin({ isCurPlaying, playlistId, id, setCurSong, duration, cover_url, title, artist, video_id }: SongElement) {
     const [startX, setStartX] = useState<number>(0);
     const [currentX, setCurrentX] = useState<number>(0);
     const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -47,7 +47,7 @@ function SongMin({ playlistId, id, setCurSong, duration, cover_url, title, artis
         };
     }, [isDragging, startX, currentX])
     return (
-        <div style={{ backgroundColor: `color-mix(in srgb, var(--color-maroon) ${progress * 100}%, var(--color-mantle))` }}
+        <div style={{ backgroundColor: `color-mix(in srgb, var(--color-maroon) ${progress * 100}%, ${isCurPlaying ? 'var(--color-surface0)' : 'var(--color-mantle)'})` }}
             className='relative flex w-full bg-surface1 mt-[0.5vw] after:bg-surface0 after:w-full after:h-[1px] after:bottom-[-0.25vw] after:absolute'>
             <div style={{ transform: `translateX(${dragOffsetX}px)` }}
                 onMouseDown={(e) => handleStart(e.clientX)}
@@ -66,7 +66,7 @@ function SongMin({ playlistId, id, setCurSong, duration, cover_url, title, artis
 export default function PlaylistEl({ id, name, songs }: Playlist) {
     const [isOpened, setOpened] = useState<boolean>(JSON.parse(localStorage.getItem('playlistsState'))?.at(id) || false);
     const [cname, setName] = useState<string>(name)
-    const { setCurTrack, updatePlaylists, setPlaylists } = useAudio()
+    const { setCurTrack, updatePlaylists, setPlaylists, queue, currentSongIdx } = useAudio()
     const setOpenedState = () => {
         const old = (JSON.parse(localStorage.getItem('playlistsState')) || [false])
         old[id] = !isOpened
@@ -77,7 +77,7 @@ export default function PlaylistEl({ id, name, songs }: Playlist) {
         updatePlaylists()
     }, [])
     return (
-        <div data-id={id} className='playlist hover:border-sky mb-4 border-surface1 rounded-2xl overflow-hidden border-2 '>
+        <div data-id={id} className='playlist hover:border-overlay2 mb-4 border-surface1 rounded-2xl overflow-hidden border-2 '>
             <div onClick={() => { setOpenedState(); }} className='flex bg-surface1 p-1'>
                 <input onInput={(e) => MusicAPI.changePlaylist(id, e.target.value).then(() => updatePlaylists()).catch(err => console.error(err))}
                     onClick={e => e.stopPropagation()}
@@ -93,7 +93,7 @@ export default function PlaylistEl({ id, name, songs }: Playlist) {
                 }} className='pl-1 pr-2 rounded-full hover:bg-overlay0 hover:scale-120 transition-all duration-200 mr-2 text-red ml-auto'></button>
             </div>
             {isOpened ? <div className='p-2 w-full bg-mantle max-h-[30vw] overflow-auto'>
-                {songs?.map((song, idx) => <SongMin key={idx} setCurSong={async () => { await setCurTrack(idx, songs) }} playlistId={id} {...song} />)}
+                {songs?.map((song, idx) => <SongMin key={idx} isCurPlaying={songs.every((el: Song, i: number) => el.title == queue[i].title && el.artist == queue[i].artist) && currentSongIdx == idx} setCurSong={async () => { await setCurTrack(idx, songs) }} playlistId={id} {...song} />)}
             </div> : null}
         </div >
     )
