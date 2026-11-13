@@ -1,8 +1,8 @@
-import { useRef } from "react";
+import { useRef, type CSSProperties, type DetailedHTMLProps, type HTMLAttributes } from "react";
 import { MusicAPI } from "../entities/api";
-import { MusicSVG } from "../shared/svgIcons";
+import { MusicNewSVG, MusicSVG, PlusSVG } from "../shared/svgIcons";
 
-export default function AddNewSongs({ setSongs }) {
+export default function AddNewSongs({ style, setSongs, className }: { style: CSSProperties, setSongs: any, className: string }) {
     const formRef = useRef<HTMLFormElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -19,11 +19,15 @@ export default function AddNewSongs({ setSongs }) {
         } catch (e) { console.error(e); }
     }
     return (
-        <div className='relative w-fit '>
-            <form onSubmit={handleSubmit} action="post" ref={formRef} className="w-fit">
+        <div className='relative h-full'>
+            <form onSubmit={handleSubmit} action="post" ref={formRef} className="h-full">
                 <label>
-                    <input onInput={handleSubmit} ref={inputRef} name="songs" id="addSongs" className='sr-only' type="file" multiple={true} accept='.mp3, .m4a' />
-                    <span className="hover:scale-110 bg-blue transtion-all duration-200 px-2 flex flex-row">+ <MusicSVG className="text-mantle scale-110 pt-1" /> </span>
+                    <input onInput={handleSubmit} ref={inputRef} name="songs" id="addSongs"
+                        className='sr-only' type="file" multiple={true} accept='.mp3, .m4a' />
+
+                    <span style={style} className={"h-full bg-blue transtion-all duration-200 text-center px-1 rounded-r-2xl flex flex-row " + className}>
+                        <MusicNewSVG className="text-mantle scale-100 m-auto" />
+                    </span>
                 </label>
             </form>
         </div>

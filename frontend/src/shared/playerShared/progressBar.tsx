@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface ProgressBar {
     max: number;
@@ -21,15 +21,29 @@ export default function ProgressBar({ max, cur, setValue, baseStyle, innerStyle,
         }
     }, [rect]);
 
+    const barRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const rh = () => {
+            if (barRef.current) setRect(barRef.current.getBoundingClientRect())
+        }
+        rh()
+        document.addEventListener('resize', rh)
+        return () => {
+            document.removeEventListener('resize', rh)
+        }
+    }, []);
+
     return (
-        <div ref={mainBarRef} onMouseLeave={() => setMouseDown(false)} onMouseUp={() => setMouseDown(false)} onBlur={() => setMouseDown(false)} onMouseDown={() => setMouseDown(true)}
+        <div ref={barRef} onMouseLeave={() => setMouseDown(false)} onMouseUp={() => setMouseDown(false)} onBlur={() => setMouseDown(false)} onMouseDown={() => setMouseDown(true)}
             onMouseMove={(e) => {
                 setHoverX(e.clientX);
                 if (isMouseDown) {
                     setValue((e.clientX - rect?.left) / rect?.width * max);
                     additionalOnClick()
                 }
-            }} onClick={(e) => { setValue((e.clientX - rect?.left) / rect?.width * max); additionalOnClick() }} className={"group " + baseStyle} >
+            }} onClick={(e) => {
+                setValue((e.clientX - rect?.left) / rect?.width * max); additionalOnClick()
+            }} className={"group " + baseStyle} >
             <div className={'relative overflow-hidden h-full w-full '}>
                 <div className={'relative transition-transform duration-200 h-full w-full ' + innerStyle} style={{ transform: `translate(${(cur / max * 100 - 100).toFixed(2)}%, 0)` }}> </div>
             </div>

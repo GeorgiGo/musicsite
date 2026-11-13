@@ -1,4 +1,5 @@
 from sqlmodel import col, delete, select, Session
+from config import SONGS_DIR
 from db import Statistics, engine, Song
 import urllib
 from mutagen import File
@@ -33,13 +34,13 @@ def _get_song_info(file_path: Path):
         if file_path.suffix.lower() == ".m4a":
             covers = audio.get("covr", [])
             if covers:
-                image_data = covers[0]  # В M4A это сразу чистые байты картинки
+                image_data = covers[0]  # in M4A its already img's bytes
                 image_mime = "image/jpeg"
                 base64_str = base64.b64encode(image_data).decode("utf-8")
                 cover_data = f"data:{image_mime};base64,{base64_str}"
         else:
             audio = ID3(file_path)
-            # Вытаскиваем обложку из MP3 (кадр APIC)
+            # get cover
             for tag in audio.values():
                 if tag.FrameID == "APIC":
                     image_data = tag.data
@@ -65,7 +66,7 @@ def _get_song_info(file_path: Path):
 def _sync_songs():
     all_songs = [
         _get_song_info(song_path)
-        for song_path in Path("./songs_library/").rglob("*")
+        for song_path in SONGS_DIR.rglob("*")
         if song_path.is_file()
     ]
     with Session(engine) as session:

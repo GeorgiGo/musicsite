@@ -41,14 +41,7 @@ export default function SoundSearch({ setSongs }) {
     }
     useEffect(() => {
         searchSongs()
-        const KeyDown = (e: KeyboardEvent) => {
-            const trg = e.target as HTMLElement
-            if (trg.tagName != 'INPUT') return;
-            if (e.code == 'Enter') searchSongs();
-        }
-        document.addEventListener('keydown', KeyDown)
         return () => {
-            document.removeEventListener('keydown', KeyDown)
         }
     }, [])
     useEffect(() => {
@@ -69,7 +62,7 @@ export default function SoundSearch({ setSongs }) {
             if (!search) return iSongs
             return iSongs.filter(song => [...search.toLowerCase()].every(l => song.title.toLowerCase().includes(l) || song.artist.toLowerCase().includes(l)))
         }
-        //if (findIn == 'LOCAL') setSongs(filterSongs)
+        if (findIn == 'LOCAL') setSongs(filterSongs)
     }, [search, iSongs])
 
     return (
@@ -77,33 +70,37 @@ export default function SoundSearch({ setSongs }) {
 
             {isSearching ? <div className="z-1000 backdrop-blur-[6px] w-full text-shadow-[0_0_22px_#89B4FA] fixed top-0 left-0 h-full text-blue  text-[xx-large] text-center pt-[33vh]">Загрузка...</div> : <></>}
 
-            <div className="z-2 m-auto mt-[1vh] relative flex w-fill" onBlur={() => setFocused(false)}>
-                <div className='mr-1'>
-                    <div onClick={() => { if (findIn == 'LOCAL') { setFindIn('YANDEX') } else { setFindIn('LOCAL') } }}
-                        style={{ background: (findIn == 'LOCAL' ? 'var(--color-sky)' : 'var(--color-yellow)') }}
-                        className='relative h-full p-auto pt-1'>
-                        <MusicSVG className="text-mantle scale-80" />
+            <div className="z-2 m-auto mt-[1vh] relative flex w-10/11 mx-auto" onBlur={() => setFocused(false)}>
+                <div>
+                    <div onClick={() => { if (findIn == 'LOCAL') { setFindIn('YANDEX'); setSongs([]) } else { setFindIn('LOCAL'); setSongs(iSongs) } }}
+                        style={{ background: (findIn == 'LOCAL' ? 'var(--color-blue)' : 'var(--color-yellow)') }}
+                        className={'transition-[border-radius] hover:-translate-x-0.5 transtion-400 relative h-full p-auto flex px-1 rounded-l-2xl ' + (findIn == 'YANDEX' ? 'rounded-2xl' : '')}>
+                        <SearchSVG className="text-mantle scale-80 m-auto" />
                     </div>
                 </div>
-                {findIn == 'LOCAL' ? <div className='mr-4'> <AddNewSongs setSongs={setSongs} /> </div> : <></>}
+                <div className='mr-4 -z-1 hover:translate-x-0.5'> <AddNewSongs className={'rounded-' + (findIn == 'LOCAL' ? 'r-2xl' : '2xl')} style={{ transform: (findIn == 'LOCAL' ? '' : 'translateX(-100%)') }} setSongs={setSongs} /> </div>
 
                 <div className="relative w-4/5 ">
 
-                    <div onClick={() => searchSongs()} className="absolute left-0 select-none text-mantle bg-blue absolute w-fit p-1 text-center h-full">
-                        <SearchSVG />
+                    <div onClick={() => searchSongs()}
+                        className="rounded-2xl absolute left-0 select-none text-mantle bg-blue absolute flex text-center h-full w-auto aspect-square">
+                        <SearchSVG className="m-auto scale-100" />
                     </div>
 
-                    {search ? <SearchClearButton setSearch={() => setSearch('')} /> : <></>}
+                    {/*search ? <SearchClearButton setSearch={() => { setSearch(''); setSongs(iSongs); }} /> : <></>*/}
+                    {search && <button onClick={() => setSearch('')} className="rounded-2xl peer right-0 hover:bg-red select-none absolute bg-maroon h-full aspect-square text-center text-mantle"></button>}
+
 
                     <input ref={inputElRef} onFocus={() => setFocused(true)} placeholder='Поиск...' type="text"
-                        className="font-bold peer-hover:line-through hover:outline-2 focus:outline-2 focus:outline-mauve outline-blue outline-0 text-text pl-[8vw] xl:pl-[1.5vw] search-input w-full bg-surface0 not-placeholder-shown:bg-surface1" onChange={(e) => { setSearch(e.target.value); }} value={search} />
+                        className="rounded-2xl font-bold peer-hover:line-through hover:outline-2 focus:outline-2 focus:outline-mauve outline-blue outline-0 text-text pl-[12vw] xl:pl-[1.6vw] search-input w-full bg-surface0 not-placeholder-shown:bg-surface1 pt-1"
+                        onChange={(e) => { setSearch(e.target.value); }} value={search} />
 
                 </div>
 
-                <div className='ml-0'>
+                <div className='-translate-x-1/2 -z-1 hover:-translate-x-1/3 group transition-[translate,color,background] duration-200'>
                     <div onClick={() => MusicAPI.updateSongLibrary().then(() => MusicAPI.searchLocalSongs(search).then(s => setMainQueue(s)).catch(err => console.log(err))).catch(e => console.error(e))}
-                        className='bg-blue w-min h-min p-1 text-mantle font-bold select-none opacity-80 hover:opacity-100 hover:shadow-[0_0_10px_var(--color-blue)]'>
-                        <UpdateSVG />
+                        className='bg-surface1 hover:bg-blue hover:text-mantle h-full text-blue w-[3vw] flex rounded-r-2xl'>
+                        <UpdateSVG className="m-auto mr-2 group-active:-rotate-360 transition-[rotate] duration-200" />
                     </div>
                 </div>
 

@@ -72,7 +72,7 @@ export function PremiumAreaChart({ er }) {
     const { songTimeDict } = useStatistics()
     // Используем функцию подготовки данных из предыдущего ответа
     const data = useMemo(() => transformData(songTimeDict), [songTimeDict]);
-    const width = useMemo(() => er.current?.getBoundingClientRect().width | 800, [er.current]);
+    const width = useMemo(() => er.current?.getBoundingClientRect().width | 1200, [er.current]);
     const height = 500;
     const padding = { top: 40, right: 20, bottom: 40, left: 50 };
 
@@ -139,8 +139,11 @@ export function PremiumAreaChart({ er }) {
                         <circle cx={pt[0]} cy={pt[1]} r="4" fill="#A78BFA" className="node-dot" />
 
                         {/* Тултип (всплывает при наведении) */}
-                        <g className="chart-tooltip">
-                            <text x={pt[0]} y={pt[1] - 16} textAnchor="middle" fill="#F3F4F6" fontSize="1.2rem" fontWeight="500">
+                        <g className="chart-tooltip flex flex-col">
+                            <text x={pt[0]} y={pt[1] - 38} textAnchor="middle" fill="var(--color-subtext0)" fontSize="1.2rem" fontWeight="500">
+                                {data[i].dateStr.slice(0, 5)}
+                            </text>
+                            <text x={pt[0]} y={pt[1] - 16} textAnchor="middle" fill="var(--color-text)" fontSize="1.2rem" fontWeight="500">
                                 {timeFromSeconds(data[i].duration)}
                             </text>
                         </g>
@@ -190,7 +193,7 @@ const transformData = (songsArray: songTimeStat[]) => {
         const key = d.toISOString().split('T')[0];
         const [year, month, day] = key.split('-');
         result.push({
-            dateStr: `${day}.${month}`, // Компактный формат для оси X (например, "03.08")
+            dateStr: `${day}.${month}.${year.slice(2)}`, // Компактный формат для оси X (например, "03.08")
             fullDate: key,
             duration: dailyMap[key] || 0
         });

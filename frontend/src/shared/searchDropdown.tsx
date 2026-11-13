@@ -34,10 +34,7 @@ export function SearchDropdown({ dropdownData, searchFunc, setValue, search, inp
         return (
             <div className="flex m-auto flex-col bg-base w-4/5 p-1" >
                 {dropdownData.map((ss, idx) =>
-                    <span key={ss} className={"text-subtext0" + (focusedSuggestion == idx ? ' bg-surface0' : '')} onMouseEnter={() => setFocusedSuggestion(idx)} onMouseDown={() => setValue(ss)} dangerouslySetInnerHTML={{
-                        __html: search.toLowerCase().split(' ')
-                            .reduce((acc, sw) => acc.toLowerCase().replace(sw, `<span style="color:var(--color-text);font-weight:bold;">${sw}</span>`), ss)
-                    }}></span>
+                    <span key={ss} className={"text-subtext0" + (focusedSuggestion == idx ? ' bg-surface0' : '')} onMouseEnter={() => setFocusedSuggestion(idx)} onMouseDown={() => setValue(ss)} >{ss}</span>
                 )}
             </div>
         )

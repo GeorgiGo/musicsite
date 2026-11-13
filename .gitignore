@@ -3,5 +3,10 @@ backend/ya_tok
 backend/songs_library/
 backend/.alembic/
 backend/alembic.ini
-react-site/node_modules/
-old/
+backend/dist
+backend/build
+backend/data
+frontend/node_modules
+frontend/src-tauri/
+frontend/dist/
+frontend/shell.nix

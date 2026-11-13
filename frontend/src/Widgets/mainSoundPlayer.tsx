@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { useAudio, type stopPlayAfter } from '../entities/contexts/AudioContext';
-import { CircleStopSCG, RepeatSVG, ShuffleSVG } from '../shared/svgIcons';
+import { CircleStopSCG, MusicSVG, RepeatSVG, ShuffleSVG } from '../shared/svgIcons';
 import ProgressBar from '../shared/playerShared/progressBar';
 import useLocalStorage, { useLSWithTimeout } from '../entities/hooks/useLocalStorage';
 import VolumeButton from '../shared/playerShared/volumeButton';
@@ -26,8 +26,8 @@ export default function MainPlayer() {
             "Digit0": () => setTime(0),
             "ArrowLeft": () => setTime(audioRef.current?.currentTime - 5),
             "ArrowRight": () => setTime(audioRef.current?.currentTime + 5),
-            "ArrowUp": (e: KeyboardEvent) => { e.preventDefault(); setVolume(Math.min(audioRef.current?.volume + 0.05, 1)) },
-            "ArrowDown": (e: KeyboardEvent) => { e.preventDefault(); setVolume(Math.max(audioRef.current?.volume - 0.05, 0)) },
+            "ArrowUp": (e: KeyboardEvent) => { e.preventDefault(); setVolume(Math.min(audioRef.current?.volume + 0.1, 1)) },
+            "ArrowDown": (e: KeyboardEvent) => { e.preventDefault(); setVolume(Math.max(audioRef.current?.volume - 0.1, 0)) },
             "KeyM": () => { if (audioRef.current) audioRef.current.muted = !audioRef.current.muted },
             "KeyR": () => setIsLoop((p: boolean) => !p),
             "KeyS": () => setIsShuffled((prev: boolean) => !prev),
@@ -54,7 +54,10 @@ export default function MainPlayer() {
 
     return (
         <div className='z-10 backdrop-blur-[8px] fixed flex-1 bottom-0 flex bg-[#1818259f] w-full h-[10vh] content-center'>
-            <img className='flex h-[8vh] w-[8vh] xl:h-[5vw] xl:w-[5vw]  m-[1vw] mt-auto mb-auto' src={currentSong?.cover_url == "" ? "null" : currentSong?.cover_url} alt="" />
+            {currentSong?.cover_url == "" ?
+                <div className="flex h-[8vh] xl:h-[5vw] mx-[1vw] my-auto"><MusicSVG className="m-auto w-2/3 h-2/3 text-blue" /></div>
+                :
+                <img src={currentSong?.cover_url == "" ? 'null' : currentSong?.cover_url} alt="" className="flex h-[8vh] w-[8vh] xl:h-[5vw] xl:w-[5vw]  mx-[1vw] mu-auto" />}
             <div className='flex flex-1 2xl:w-[30vw] flex-row m-auto mx-0'>
                 <div className='flex flex-col w-full'>
                     <span className='text-text font-bold text-xl 2xl:text-[x-large]'>{currentSong?.title}</span>
@@ -62,8 +65,9 @@ export default function MainPlayer() {
                 </div>
                 {!audioRef.current?.loop ? <div className='xl:flex w-full flex-col m-auto mr-0 ml-2'>
                     {isShuffled ? <span className='text-text font-bold text-[small]'>?</span> : <>
-                        <span className='text-text font-bold text-[medium]'>{queue[(currentSongIdx + 1) % queue.length]?.title}</span>
-                        <span className='text-subtext0 text-[x-small]'>{queue[(currentSongIdx + 1) % queue.length]?.artist}</span></>}
+                        <span className='text-text font-bold text-[large]'>{queue[(currentSongIdx + 1) % queue.length]?.title}</span>
+                        <span className='text-subtext0 text-[medium]'>{queue[(currentSongIdx + 1) % queue.length]?.artist}</span>
+                    </>}
                 </div> : null}
             </div >
             <div className='text-text m-auto text-center flex-0_1 xl:w-[10vw] flex justify-center'>

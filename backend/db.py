@@ -9,10 +9,12 @@ from sqlmodel import (
 )
 import os
 
-DATABASE_DIR = "./app/data"
+from config import DATA_DIR
+
+DATABASE_DIR = DATA_DIR / "./data"
 DATABASE_FILE = os.path.join(DATABASE_DIR, "saved_songs.db")
 
-# На всякий случай проверяем, существует ли папка, если запускаешь локально без докера
+# check dir if running without docker
 if not os.path.exists(DATABASE_DIR):
     os.makedirs(DATABASE_DIR)
 

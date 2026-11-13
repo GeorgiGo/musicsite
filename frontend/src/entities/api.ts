@@ -1,5 +1,5 @@
 import type { Authorized } from "../App";
-import type { Playlist, Song } from "./dataInterfaces";
+import type { Playlist, Song, songTimeStat } from "./dataInterfaces";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -11,6 +11,14 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 export const MusicAPI = {
+    async checkDownloadedYandexSong(video_id: string): Promise<boolean> {
+        const response = await fetch(`${BASE_URL}/yandex/check_download/${video_id}`)
+        return handleResponse<boolean>(response)
+    },
+    async downloadYandexSong(video_id: string) {
+        const response = await fetch(`${BASE_URL}/yandex/download/${video_id}`)
+        handleResponse(response)
+    },
     async checkYandexAuth() {
         const response = await fetch(`${BASE_URL}/yandex/auth/status`)
         return handleResponse<Authorized>(response);
@@ -76,9 +84,9 @@ export const MusicAPI = {
         const response = await fetch(`${BASE_URL}/playlists/${playlistId}`, { method: 'DELETE' });
         if (!response.ok) throw new Error('Failed to remove playlist')
     },
-    async getStat(): Promise<{}> {
+    async getStat(): Promise<getStatReturn> {
         const response = await fetch(`${BASE_URL}/statistics`)
-        return handleResponse(response)
+        return handleResponse<getStatReturn>(response)
     },
     async putStat(statistics): Promise<void> {
         const response = await fetch(`${BASE_URL}/statistics`, {
@@ -89,4 +97,8 @@ export const MusicAPI = {
         })
         if (!response.ok) throw new Error('Failed to update statistics')
     }
+}
+export interface getStatReturn {
+    songTimeDate: string;
+    all_minutes: string;
 }

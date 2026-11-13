@@ -80,7 +80,7 @@ export function AudioProvider({ children }) {
             // Вычисляем следующее состояние: если пришла функция — вызываем её, если boolean — берем как есть
             const nextValue = typeof value === 'function' ? value(currentIsPlaying) : value;
             // Управляем аудио в зависимости от вычисленного нового значения
-            if (nextValue) audioRef.current?.play();
+            if (nextValue) audioRef.current?.play().catch(err => console.error('PlayFailed: ', err));
             else audioRef.current?.pause();
             // Возвращаем новое состояние, чтобы обновить стейт
             return nextValue;

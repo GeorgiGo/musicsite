@@ -22,11 +22,17 @@ function MainSoundField({ curTab }) {
         setPlay(true)
     }
     const { hideSongList } = useSettings()
+    const { findIn } = useAudio()
 
-    return (<div style={{ display: (curTab === 'MAIN' ? 'block' : 'none') }} className={"transition-all duration-300 w-[55vw] 2xl:w-[41vw] m-auto mt-[1vh] p-4 px-6 backdrop-blur-[2px] bg-mantle block relative 2xl:ml-[25vw] mainSoundField " + (hideSongList == 'SHOW' ? 'show' : hideSongList == 'OPACITY' ? 'auto' : 'hide')}>
-        <SoundSearch setSongs={setSongs} />
-        <div className="m-[0.2vw] mt-[2vh] -z-9 overflow-y-scroll overflow-x-hidden  max-h-[72vh] xl:max-h-[81vh] scrollbar-none">
+    return (<div style={{ display: (curTab === 'MAIN' ? 'block' : 'none') }}
+        className={"transition-all duration-300 w-[55vw] 2xl:w-[41vw] m-auto mt-[1vh] p-4 px-6 backdrop-blur-[2px] bg-mantle block relative 2xl:ml-[25vw] mainSoundField " + (hideSongList == 'SHOW' || songs.length == 0 ? 'show' : hideSongList == 'OPACITY' ? 'auto' : 'hide')}>
+        <div className='w-full flex'>
+            <SoundSearch setSongs={setSongs} />
+        </div>
+        <div className="m-[0.2vw] mt-4 -z-9 overflow-y-scroll overflow-x-hidden  max-h-[72vh] xl:max-h-[83vh] scrollbar-none">
             {songs.map((song, idx) => <SongEl isPlaying={currentSong?.video_id == song.video_id} key={song.video_id} {...song} setCurSong={() => setSongFromMain(idx)} />)}
+            {songs.length == 0 && <div className='text-text font-bold text-xl m-auto w-fit mt-4'>{findIn == 'YANDEX' ? 'Поиск в Яндекс.Музыка' : 'У вас нет сохранненных на диск песен. '} </div>}
+            {songs.length == 0 && findIn == 'LOCAL' && <div className='text-subtext0 m-auto w-fit my-1'>Поищите в яндексе, добавте вручную или выбрете директорию</div>}
         </div>
     </div>)
 }
@@ -38,7 +44,7 @@ function PlaylistField({ curTab }) {
     return (
         <div className="z-1 w-[25vw] mr-[2.5vw] mt-[1vh]" style={{ display: (curTab === 'MAIN' ? 'block' : 'none') }}>
             <h1 className='select-none pointer-events-none text-blue text-[large] font-bold m-auto w-fit '>󰲸 Плейлисты 󰲸</h1>
-            <div className='overflow-y-scroll max-h-2/3 scrollbar-track-crust scrollbar-thumb-surface1 scrollbar-thin pr-2'>
+            <div className='overflow-y-scroll max-h-[85vh] scrollbar-track-crust scrollbar-thumb-surface1 scrollbar-thin pr-2'>
                 {playlists.map((pl: Playlist) => <PlaylistEl key={pl.id} {...pl} />)}
                 <button onClick={() => {
                     if (canCreatePlaylist) {
@@ -83,6 +89,7 @@ function App() {
             case 'KeyI': setCurTab('SETTINGS'); break;
             case 'KeyP': setCurTab('STATISTICS'); break;
             case 'KeyN': setCurTab('MAIN'); break;
+            case 'F5': e.preventDefault(); window.location.reload(); break;
         }
     }
     useEffect(() => {
@@ -90,7 +97,7 @@ function App() {
         document.addEventListener('focus', show)
         document.addEventListener('keydown', onKeyDownHndlr)
         const onCtx = (e: MouseEvent) => { e.preventDefault(); }
-        document.addEventListener('contextmenu', onCtx);
+        //document.addEventListener('contextmenu', onCtx);
         return () => {
             document.removeEventListener('blur', hide)
             document.removeEventListener('focus', show)

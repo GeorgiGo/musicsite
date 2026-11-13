@@ -2,12 +2,12 @@ import { useEffect, useState, useRef } from "react";
 import CommonInformation from "../shared/baseSongInformation";
 import { useAudio } from "../entities/contexts/AudioContext";
 import type { Playlist, SongElement } from "../entities/dataInterfaces";
-import { EditSVG, ListPlusSVG } from "../shared/svgIcons";
+import { DownloadSVG, EditSVG, ErrorSVG, ListPlusSVG, TickSVG, TimeSVG } from "../shared/svgIcons";
 import { MusicAPI } from "../entities/api";
 import Modal from "./ModalWindow";
 import { EditSongModal } from "./EditSongW";
 
-export function SongEl({ isPlaying, video_id, title, artist, cover_url, duration, setCurSong }: SongElement) {
+export function SongEl({ isPlaying, video_id, title, artist, cover_url, duration, setCurSong, stream_url }: SongElement) {
     const [startX, setStartX] = useState<number>(0);
     const [startY, setStartY] = useState<number>(0);
     const [currentX, setCurrentX] = useState<number>(0);
@@ -77,6 +77,12 @@ export function SongEl({ isPlaying, video_id, title, artist, cover_url, duration
     }
     const [isModalPlaylistOpen, setModalPlaylistOpen] = useState<boolean>(false);
     const [isModalChangeOpen, setModalChangeOpen] = useState<boolean>(false);
+    const [downloaded, setDownloaded] = useState<'NO' | 'PROGRESS' | 'YES' | 'ERROR'>('NO');
+    useEffect(() => {
+        if (stream_url == 'yandex') {
+            MusicAPI.checkDownloadedYandexSong(video_id).then(d => { if (d) setDownloaded('YES') })
+        }
+    }, [])
 
     return (
         <div style={{
@@ -117,6 +123,16 @@ export function SongEl({ isPlaying, video_id, title, artist, cover_url, duration
 
                 <CommonInformation title={title} artist={artist} duration={duration} cover_url={cover_url} />
 
+                {stream_url == 'yandex' ?
+                    <div className="my-auto mx-2 mr-0 text-text hover:scale-120"
+                        style={{ color: (downloaded == 'NO' ? 'var(--color-text)' : (downloaded == 'YES' ? 'var(--color-blue)' : (downloaded == 'PROGRESS' ? 'var(--color-yellow)' : 'var(--color-maroon)'))) }}
+                        onClick={() => {
+                            if (downloaded != 'NO') return;
+                            setDownloaded('PROGRESS');
+                            MusicAPI.downloadYandexSong(video_id)
+                                .then(() => { setDownloaded('YES') })
+                                .catch(err => { console.error(err); setDownloaded('ERROR'); setTimeout(() => setDownloaded('NO'), 2000); });
+                        }}>{downloaded == 'YES' ? <TickSVG /> : (downloaded == 'PROGRESS' ? <TimeSVG classname='' /> : (downloaded == 'NO' ? <DownloadSVG /> : <ErrorSVG />))}</div> : <></>}
                 <div className="but group flex z-60 m-auto xl:ml-1 mr-2">
                     <button className="transition-[padding,_scale,_opacity]  group-hover:pr-2 group-hover:pl-4 justify-between inset duration-300 group-hover:opacity-0 group-hover:invisible opacity-100 hover:scale-130 pl-1 pr-1 m-1 select-none text-[large] text-subtext0">󰇙</button>
 

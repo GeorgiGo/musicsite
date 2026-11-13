@@ -1,10 +1,16 @@
 import json
 from os import wait
+from pathlib import Path
 from fastapi import HTTPException
 import os
 import requests
-from yandex_music import Client, Search, Suggestions, client
+from yandex_music import Client, Search, Suggestions
 from yandex_music import OAuthToken
+
+from config import SONGS_DIR
+from mutagen.id3 import ID3, TIT2, TPE1
+from mutagen.mp3 import MP3
+from mutagen.id3 import APIC
 
 
 TOKEN_FILE_PATH = "./ya_tok"
@@ -56,6 +62,60 @@ def auth() -> OAuthToken:
 
 def on_code(code):
     print(f"Open {code.verification_url} and enter user code {code.user_code}")
+
+
+def ym_check_download(track_id):
+    client = get_client()
+    tracks = client.tracks([track_id])
+    if not tracks:
+        raise HTTPException(status_code=404, detail="Трек не найден")
+    title = tracks[0].title
+    artist = ", ".join(
+        [a.name if a.name is not None else "Unknown" for a in tracks[0].artists]
+    )
+    file_path = f"{SONGS_DIR}/{artist}-{title}.mp3"
+    if os.path.exists(file_path):
+        return True
+    else:
+        return False
+
+
+def ym_download(track_id):
+    client = get_client()
+    tracks = client.tracks([track_id])
+    if not tracks:
+        raise HTTPException(status_code=404, detail="Трек не найден")
+    title = tracks[0].title
+    artist = ", ".join(
+        [a.name if a.name is not None else "Unknown" for a in tracks[0].artists]
+    )
+    cover_file = tracks[0].download_cover_bytes()
+
+    file_path = f"{SONGS_DIR}/{artist}-{title}.mp3"
+
+    tracks[0].download(file_path)
+    try:
+        try:
+            audio = MP3(file_path, ID3=ID3)
+        except Exception:
+            audio = MP3(file_path)
+            audio.add_tags()
+        audio["TIT2"] = TIT2(encoding=3, text=title)
+        audio["TPE1"] = TPE1(encoding=3, text=artist)
+        if cover_file:
+            mime_type = "image/jpeg"
+            audio["APIC"] = APIC(
+                encoding=3,  # 3 = UTF-8 strings
+                mime=str(mime_type),
+                type=3,  # 3 = Front cover photo
+                desc="Front Cover",
+                data=bytes(cover_file),
+            )
+        audio.save(v2_version=3)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to update metadata: {str(e)}"
+        )
 
 
 def ym_getLink(track_id):

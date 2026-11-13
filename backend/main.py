@@ -20,6 +20,7 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import APIC
 from pathlib import Path
 
+from config import DATA_DIR, SONGS_DIR
 from db import (
     PlaylistFull,
     PlaylistUpdate,
@@ -34,7 +35,8 @@ from db import (
 )
 from ya_music import (
     get_valid_client,
-    get_yandex_client_credentials,
+    ym_check_download,
+    ym_download,
     ym_getLink,
     ym_search,
     ym_search_s,
@@ -48,9 +50,13 @@ def on_startup():
     create_all()
 
 
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+SONGS_DIR.mkdir(exist_ok=True, parents=True)
+os.chdir(DATA_DIR)
+
 app.mount(
     "/songs_library",
-    StaticFiles(directory=os.path.join(os.path.dirname(__file__), "songs_library")),
+    StaticFiles(directory=SONGS_DIR),
     name="static",
 )
 app.add_middleware(
@@ -62,12 +68,12 @@ app.add_middleware(
 )
 
 
-@app.get("/songs")
+@app.get("/songs", tags=["songs"])
 def get_all_songs(session: SessionDep):
     return session.exec(select(Song)).all()
 
 
-@app.post("/songs/new", response_model=None)
+@app.post("/songs/new", tags=["songs"], response_model=None)
 async def add_song_files(songs: list[UploadFile] = File(...)):
     for song in songs:
         name: str = song.filename
@@ -82,7 +88,7 @@ async def add_song_files(songs: list[UploadFile] = File(...)):
 from mutagen.mp4 import MP4, MP4Cover
 
 
-@app.patch("/songs/{song_id}", response_model=Song)
+@app.patch("/songs/{song_id}", tags=["songs"], response_model=Song)
 async def update_song(
     song_id: str,
     session: SessionDep,
@@ -141,7 +147,7 @@ async def update_song(
     return song_db
 
 
-@app.delete("/songs/id/{song_id}")
+@app.delete("/songs/id/{song_id}", tags=["songs"])
 def delete_song_id(song_id: int, session: SessionDep):
     song = session.get(Song, song_id)
     if not song:
@@ -151,7 +157,7 @@ def delete_song_id(song_id: int, session: SessionDep):
     return song
 
 
-@app.get("/playlists", response_model=List[PlaylistFull])
+@app.get("/playlists", tags=["playlists"], response_model=List[PlaylistFull])
 def get_all_playlists(session: SessionDep):
     return (
         session.exec(select(Playlist).options(joinedload(Playlist.songs)))
@@ -160,7 +166,7 @@ def get_all_playlists(session: SessionDep):
     )
 
 
-@app.post("/playlist", response_model=Playlist)
+@app.post("/playlist", tags=["playlists"], response_model=Playlist)
 def create_playlist(playlist: PlaylistCommon, session: SessionDep):
     db_playlist = Playlist.validate(playlist)
     session.add(db_playlist)
@@ -169,7 +175,7 @@ def create_playlist(playlist: PlaylistCommon, session: SessionDep):
     return db_playlist
 
 
-@app.patch("/playlists/{playlist_id}", response_model=Playlist)
+@app.patch("/playlists/{playlist_id}", tags=["playlists"], response_model=Playlist)
 def change_playlist(playlist_id: int, playlist: PlaylistUpdate, session: SessionDep):
     db_playlist = session.get(Playlist, playlist_id)
     if not db_playlist:
@@ -182,7 +188,7 @@ def change_playlist(playlist_id: int, playlist: PlaylistUpdate, session: Session
     return db_playlist
 
 
-@app.delete("/playlists/{playlist_id}", response_model=Playlist)
+@app.delete("/playlists/{playlist_id}", tags=["playlists"], response_model=Playlist)
 def delete_playlist(playlist_id: int, session: SessionDep):
     playlist = session.get(Playlist, playlist_id)
     if not playlist:
@@ -192,7 +198,7 @@ def delete_playlist(playlist_id: int, session: SessionDep):
     return playlist
 
 
-@app.post("/playlists/{playlist_id}/add_song/{song_id}")
+@app.post("/playlists/{playlist_id}/add_song/{song_id}", tags=["playlists"])
 def add_song_to_playlist(playlist_id: int, song_id: str, session: SessionDep):
     song = session.exec(select(Song).where(Song.video_id == song_id)).first()
     if not song:
@@ -206,7 +212,7 @@ def add_song_to_playlist(playlist_id: int, song_id: str, session: SessionDep):
     return playlist
 
 
-@app.delete("/playlists/{playlist_id}/remove_song/{song_id}")
+@app.delete("/playlists/{playlist_id}/remove_song/{song_id}", tags=["playlists"])
 def delete_song_from_playlist(playlist_id: int, song_id: str, session: SessionDep):
     song = session.exec(select(Song).where(Song.video_id == song_id)).first()
     if not song:
@@ -227,7 +233,7 @@ def update_songs():
     _sync_songs()
 
 
-@app.get("/statistics")
+@app.get("/statistics", tags=["statistics"])
 async def get_stat(session: SessionDep):
     stat = session.get(Statistics, 1)
     if not stat:
@@ -235,7 +241,7 @@ async def get_stat(session: SessionDep):
     return stat
 
 
-@app.put("/statistics", response_model=Statistics)
+@app.put("/statistics", tags=["statistics"], response_model=Statistics)
 async def put_stat(stat: StatisticBase, session: SessionDep):
     db_stat = session.get(Statistics, 1)
     if not db_stat:
@@ -248,7 +254,7 @@ async def put_stat(stat: StatisticBase, session: SessionDep):
     return stat
 
 
-@app.get("/search_local")
+@app.get("/search_local", tags=["songs"])
 def search_local(session: SessionDep, search: str = ""):
     return session.exec(select(Song)).all()
 
@@ -262,7 +268,6 @@ from fastapi import FastAPI, BackgroundTasks
 from yandex_music import Client, OAuthToken
 from ya_music import TOKEN_FILE_PATH, save_token, load_token
 
-# Хранилище текущего состояния авторизации в памяти
 auth_state = {"is_pending": False, "verification_url": None, "user_code": None}
 
 
@@ -290,15 +295,13 @@ def background_device_auth():
         auth_state["user_code"] = None
 
 
-@app.get("/yandex/auth/status")
+@app.get("/yandex/auth/status", tags=["yandex_api"])
 def check_auth_status(background_tasks: BackgroundTasks):
     """Эндпоинт проверки статуса с автоматическим продлением"""
     try:
-        # Пытаемся получить рабочий клиент (внутри сработает автопродление, если нужно)
         client = get_valid_client()
         return {"authorized": True, "user": client.me.account.login}
     except HTTPException:
-        # Если авторизации нет и продлить не вышло — запускаем вход по коду
         pass
 
     if auth_state["is_pending"]:
@@ -323,17 +326,28 @@ def check_auth_status(background_tasks: BackgroundTasks):
     }
 
 
-@app.get("/yandex/search/")
+@app.get("/yandex/search/", tags=["yandex_api"])
 def search_yandex(query: str):
     return ym_search(query)
 
 
-@app.get("/yandex/search_s/")
+@app.get("/yandex/search_s/", tags=["yandex_api"])
 def search_s_yandex(query: str):
     return ym_search_s(query)
 
 
-@app.get("/yandex/stream/{track_id}/stream.mp3")
+@app.get("/yandex/check_download/{track_id}")
+def check_yandex_download(track_id: str):
+    return ym_check_download(track_id)
+
+
+@app.get("/yandex/download/{track_id}")
+def yandex_download(track_id: str):
+    ym_download(track_id)
+    return {"status": "ok"}
+
+
+@app.get("/yandex/stream/{track_id}/stream.mp3", tags=["yandex_api"])
 def stream_yandex(track_id: str, range: str = Header(None)):
     try:
         direct_link = ym_getLink(track_id)
@@ -344,21 +358,17 @@ def stream_yandex(track_id: str, range: str = Header(None)):
             "Connection": "keep-alive",
         }
 
-        # Если браузер просит определенный кусок трека (перемотка), передаем этот заголовок Яндексу
+        # if browser needs a range
         if range:
             headers["Range"] = str(range)
 
-        # 3. Делаем запрос к Яндексу
+        # response to yandex
         response = requests.get(direct_link, headers=headers, stream=True)
 
-        # Если Яндекс вернул ошибку авторизации/доступа, выводим её в консоль
         if response.status_code not in [200, 206]:
-            print(f"Ошибка Яндекса: {response.status_code} - {response.text}")
-            raise HTTPException(
-                status_code=response.status_code, detail="Яндекс заблокировал запрос"
-            )
+            print(f"Yandex error: {response.status_code} - {response.text}")
+            raise HTTPException(status_code=response.status_code, detail="yandex err")
 
-        # 4. Пробрасываем обратно браузеру критически важные аудио-заголовки
         response_headers = {
             "Content-Type": "audio/mpeg",
             "Accept-Ranges": "bytes",
@@ -368,7 +378,7 @@ def stream_yandex(track_id: str, range: str = Header(None)):
         if "Content-Length" in response.headers:
             response_headers["Content-Length"] = response.headers["Content-Length"]
 
-        # 5. Стримим куски байт напрямую в плеер
+        # Stream bytes
         def iterfile():
             for chunk in response.iter_content(chunk_size=65536):
                 if chunk:
@@ -379,5 +389,10 @@ def stream_yandex(track_id: str, range: str = Header(None)):
         )
 
     except Exception as e:
-        print(f"Внутренняя ошибка: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+import uvicorn
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=8000)

@@ -12,6 +12,7 @@ export function StatisticsProvider({ children }) {
     useEffect(() => {
         const dofunc = async () => {
             const data = await MusicAPI.getStat().catch(err => console.error(err))
+            if (!data) return
             setAllTime(JSON.parse(data.all_minutes))
             setSongTimeDict(JSON.parse(data.songTimeDate))
         }
