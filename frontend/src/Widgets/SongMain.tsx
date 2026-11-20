@@ -6,6 +6,7 @@ import { DownloadSVG, EditSVG, ErrorSVG, ListPlusSVG, TickSVG, TimeSVG } from ".
 import { MusicAPI } from "../entities/api";
 import Modal from "./ModalWindow";
 import { EditSongModal } from "./EditSongW";
+import ButtonWithTitle from "../shared/buttonWithTitle";
 
 export function SongEl({ isPlaying, video_id, title, artist, cover_url, duration, setCurSong, stream_url }: SongElement) {
     const [startX, setStartX] = useState<number>(0);
@@ -90,7 +91,7 @@ export function SongEl({ isPlaying, video_id, title, artist, cover_url, duration
             height: (isPlaylisting ? `${draggedHeight.current}px` : 'auto'),
             backgroundColor: `color-mix(in srgb, var(--color-${dragOffsetX > 0 ? 'teal' : 'blue'}${isPlaylisting ? 'n' : ''}) ${progress * 100}%, var(--color-mantle))`
         }}
-            className='relative flex w-full bg-surface1 mt-[2vh] xl:mt-[1vh] after:bg-surface0 after:w-[100%] after:h-[1px] after:bottom-[-1vh] xl:after:bottom-[-0.5vh] after:absolute'>
+            className='songEl relative flex w-full bg-surface1 mt-[2vh] xl:mt-[1vh] after:bg-surface0 after:w-[100%] after:h-[1px] after:bottom-[-1vh] xl:after:bottom-[-0.5vh] after:absolute'>
 
             <div style={{
                 zIndex: (isPlaylisting ? 900 : 1),
@@ -124,7 +125,8 @@ export function SongEl({ isPlaying, video_id, title, artist, cover_url, duration
                 <CommonInformation title={title} artist={artist} duration={duration} cover_url={cover_url} />
 
                 {stream_url == 'yandex' ?
-                    <div className="my-auto mx-2 mr-0 text-text hover:scale-120"
+                    <ButtonWithTitle clearClassName={true}
+                        title={downloaded == "YES" ? "Загруженно" : (downloaded == 'PROGRESS' ? "Подождите..." : (downloaded == 'NO' ? "Скачать" : "Ошбка"))} className="my-auto mx-2 mr-0 text-text hover:scale-120"
                         style={{ color: (downloaded == 'NO' ? 'var(--color-text)' : (downloaded == 'YES' ? 'var(--color-blue)' : (downloaded == 'PROGRESS' ? 'var(--color-yellow)' : 'var(--color-maroon)'))) }}
                         onClick={() => {
                             if (downloaded != 'NO') return;
@@ -132,7 +134,7 @@ export function SongEl({ isPlaying, video_id, title, artist, cover_url, duration
                             MusicAPI.downloadYandexSong(video_id)
                                 .then(() => { setDownloaded('YES') })
                                 .catch(err => { console.error(err); setDownloaded('ERROR'); setTimeout(() => setDownloaded('NO'), 2000); });
-                        }}>{downloaded == 'YES' ? <TickSVG /> : (downloaded == 'PROGRESS' ? <TimeSVG classname='' /> : (downloaded == 'NO' ? <DownloadSVG /> : <ErrorSVG />))}</div> : <></>}
+                        }}>{downloaded == 'YES' ? <TickSVG /> : (downloaded == 'PROGRESS' ? <TimeSVG classname='' /> : (downloaded == 'NO' ? <DownloadSVG /> : <ErrorSVG />))}</ButtonWithTitle> : <></>}
                 <div className="but group flex z-60 m-auto xl:ml-1 mr-2">
                     <button className="transition-[padding,_scale,_opacity]  group-hover:pr-2 group-hover:pl-4 justify-between inset duration-300 group-hover:opacity-0 group-hover:invisible opacity-100 hover:scale-130 pl-1 pr-1 m-1 select-none text-[large] text-subtext0">󰇙</button>
 

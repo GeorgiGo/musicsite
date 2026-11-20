@@ -28,7 +28,7 @@ export interface BaseSong {
     cover_url: string;
 }
 /** An interface, that describes a song*/
-export interface Song extends BaseSong {
+export interface Song extends BaseSong, _t {
     id: number;
     video_id: string;
     stream_url: string;
@@ -56,4 +56,12 @@ export interface songTimeStat {
 export interface statistics {
     songTimeDict: songTimeStat[],
     allTime: number
+}
+interface _t {
+    type: string
+}
+export interface Artist extends _t {
+    id: string,
+    cover_url: string,
+    title: string
 }

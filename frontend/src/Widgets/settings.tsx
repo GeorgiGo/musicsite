@@ -22,7 +22,7 @@ export default function SettingsField({ curTab, setCurTab }) {
     )
 }
 export function SettingsTab({ curTab }) {
-    const { showVisualizer, setShowVizualizer, hideSongList, showCoverOnBack, setShowCoverOnBack, setHideSongList } = useSettings()
+    const { showVisualizer, setShowVizualizer, hideSongList, showCoverOnBack, setShowCoverOnBack, setHideSongList, setScrollToSong, scrollToSong } = useSettings()
     return (
         <div style={{ display: (curTab === 'SETTINGS' ? 'block' : 'none') }} className="backdrop-blur-[12px] bg-[#181825af] h-full w-fit m-auto text-text p-8 mt-3">
             <h1 className="text-xl font-bold m-auto w-fit text-[x-large] text-shadow-[0_0_4px_var(--color-text)] mb-3">-- Настройки --</h1>
@@ -30,6 +30,7 @@ export function SettingsTab({ curTab }) {
                 <ChooseSetting showTypes={['Авто', 'Всегда', 'Никогда']} name='Показывать визуализатор' types={['SHOW', 'ALWAYS', 'NEVER']} setFunction={(e) => setShowVizualizer(['SHOW', 'ALWAYS', 'NEVER'][e])} curType={showVisualizer} />
                 <ChooseSetting showTypes={['Показан', 'Полупрозрачен', 'Скрыт']} name='Список песен, когда не в фокусе' types={['SHOW', 'OPACITY', 'HIDE']} setFunction={(e) => setHideSongList(['SHOW', 'OPACITY', 'HIDE'][e])} curType={hideSongList} />
                 <CheckSetting name='Показывать обложку песни на заднем фоне' setFunction={(b: boolean) => setShowCoverOnBack(b)} curType={showCoverOnBack} />
+                <CheckSetting name='Прокрутить до песни, если она не видна' setFunction={(b: boolean) => setScrollToSong(b)} curType={scrollToSong} />
             </div>
         </div>
     )
@@ -41,7 +42,7 @@ interface CheckSettingProps {
 }
 function CheckSetting({ name, setFunction, curType }: CheckSettingProps) {
     return (
-        <div className="select-none text-[large] flex flex-row">
+        <div className="select-none text-[large] flex flex-row my-1">
             <span>{name}: </span>
             <span className="text-blue py-1 px-2 rounded-2xl hover:font-bold hover:bg-surface0">
                 {curType == true ?
@@ -70,7 +71,7 @@ interface ChooseSettingProps {
 function ChooseSetting({ name, types, showTypes, setFunction, curType }: ChooseSettingProps) {
     const curIdx = useMemo(() => { return types.findIndex(el => el == curType) }, [curType, types]);
     return (
-        <div className="select-none text-[large]">
+        <div className="select-none text-[large] my-1">
             <span>{name}: </span>
             <span onClick={() => setFunction((curIdx + 1) % types.length)} className="text-blue py-1 px-2 rounded-2xl hover:font-bold hover:bg-surface0">{showTypes[curIdx]}</span>
         </div>

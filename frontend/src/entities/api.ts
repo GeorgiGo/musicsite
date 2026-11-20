@@ -1,5 +1,5 @@
 import type { Authorized } from "../App";
-import type { Playlist, Song, songTimeStat } from "./dataInterfaces";
+import type { Artist, Playlist, Song, songTimeStat } from "./dataInterfaces";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -8,6 +8,11 @@ async function handleResponse<T>(response: Response): Promise<T> {
         throw new Error(`API Error: ${response.status} ${response.statusText}`)
     }
     return response.json()
+}
+
+interface yandexSearch {
+    tracks: Song[],
+    artists: Artist[]
 }
 
 export const MusicAPI = {
@@ -33,10 +38,15 @@ export const MusicAPI = {
         const response = await fetch(`${BASE_URL}/yandex/search_s/?${params.toString()}`)
         return handleResponse<string[]>(response);
     },
-    async searchYandexSongs(searchQuery: string): Promise<Song[]> {
-        if (searchQuery == '') return []
+    async searchYandexSongs(searchQuery: string): Promise<yandexSearch> {
+        if (searchQuery == '') return { tracks: [], artists: [] }
         const params = new URLSearchParams({ query: searchQuery });
         const response = await fetch(`${BASE_URL}/yandex/search/?${params.toString()}`)
+        return handleResponse<yandexSearch>(response);
+    },
+    async searchYandexSongsByArtist(artist: string, searchQuery: string): Promise<Song[]> {
+        const params = new URLSearchParams({ query: searchQuery });
+        const response = await fetch(`${BASE_URL}/yandex/search_by_artist/${artist}/?${params.toString()}`)
         return handleResponse<Song[]>(response);
     },
     async searchLocalSongs(searchQuery: string): Promise<Song[]> {

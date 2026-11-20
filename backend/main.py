@@ -39,6 +39,7 @@ from ya_music import (
     ym_download,
     ym_getLink,
     ym_search,
+    ym_search_by_artist,
     ym_search_s,
 )
 
@@ -329,6 +330,11 @@ def check_auth_status(background_tasks: BackgroundTasks):
 @app.get("/yandex/search/", tags=["yandex_api"])
 def search_yandex(query: str):
     return ym_search(query)
+
+
+@app.get("/yandex/search_by_artist/{artist}/", tags=["yandex_api"])
+def search_yandex_by_artist(artist: str, query: str):
+    return ym_search_by_artist(artist, query)
 
 
 @app.get("/yandex/search_s/", tags=["yandex_api"])

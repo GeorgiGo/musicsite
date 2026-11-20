@@ -5,7 +5,7 @@ import PlaylistEl from './Widgets/playlist';
 import { useAudio } from './entities/contexts/AudioContext';
 import { SongEl } from "./Widgets/SongMain"
 import './App.css'
-import type { Playlist, Song } from './entities/dataInterfaces';
+import type { Artist, Playlist, Song } from './entities/dataInterfaces';
 import { AudioVisualizerO } from './Widgets/AudioVisualizer';
 import { MusicAPI } from './entities/api';
 import { StatisticsTab } from './Widgets/statistics';
@@ -15,22 +15,51 @@ import { useSettings } from './entities/contexts/SettingsContext';
 import Modal from './Widgets/ModalWindow';
 
 function MainSoundField({ curTab }) {
-    const { setCurTrack, currentSong, setPlay } = useAudio();
+    const { setCurTrack, currentSong, setPlay, currentSongIdx, findIn } = useAudio();
+    const { hideSongList, scrollToSong } = useSettings()
     const [songs, setSongs] = useState<Song[]>([]);
-    const setSongFromMain = async (idx) => {
+    const [artists, setArtists] = useState<Artist[]>([]);
+    const setSongFromMain = async (idx: number) => {
         await setCurTrack(idx, songs)
         setPlay(true)
     }
-    const { hideSongList } = useSettings()
-    const { findIn } = useAudio()
+    const searchArtist = (artist: Artist) => {
+        setArtists([]);
+        MusicAPI.searchYandexSongsByArtist(artist.id, "").then(s => setSongs(s));
+    }
+    useEffect(() => {
+        if (!scrollToSong) return;
+        const l = document.querySelectorAll('.songEl');
+        if (!l) return;
+        const el = l[currentSongIdx]
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const wh = window.innerHeight
+
+        const vertInView = (rect.top <= wh) && ((rect.top + rect.height) >= 0);
+
+        if (!vertInView) { el.scrollIntoView() }
+    }, [currentSongIdx, currentSong])
 
     return (<div style={{ display: (curTab === 'MAIN' ? 'block' : 'none') }}
-        className={"transition-all duration-300 w-[55vw] 2xl:w-[41vw] m-auto mt-[1vh] p-4 px-6 backdrop-blur-[2px] bg-mantle block relative 2xl:ml-[25vw] mainSoundField " + (hideSongList == 'SHOW' || songs.length == 0 ? 'show' : hideSongList == 'OPACITY' ? 'auto' : 'hide')}>
-        <div className='w-full flex'>
-            <SoundSearch setSongs={setSongs} />
-        </div>
-        <div className="m-[0.2vw] mt-4 -z-9 overflow-y-scroll overflow-x-hidden  max-h-[72vh] xl:max-h-[83vh] scrollbar-none">
+        className={"transition-all duration-300 w-[55vw] 2xl:w-[41vw] m-auto mt-0 rounded-t-xl p-4 px-6 backdrop-blur-[2px] bg-mantle block relative 2xl:ml-[25vw] mainSoundField " + (hideSongList == 'SHOW' || songs.length == 0 ? 'show' : hideSongList == 'OPACITY' ? 'auto' : 'hide')}>
+        <SoundSearch setSongs={setSongs} setArtists={setArtists} />
+        {artists.length > 0 && <div className='m-2 mt-3 -z-9 overflow-x-scroll scrollbar-thin scrollbar-track-none scrollbar-thumb-subtext1 max-h-10vh h-min'>
+            <h1 className='text-text text-xl font-bold mb-2'>Исполнители</h1>
+            <div className='flex flex-row'>
+                {artists.map((artist, idx) => <div className='group' onClick={() => searchArtist(artist)}>
+                    <div className='group-hover:rotate-15 group-hover:scale-110 group-hover:z-50 relative'>
+                        <h2 className='absolute top-1/2 left-1/2 -translate-1/2 text-text -rotate-15 group-hover:block hidden font-bold text-xl z-55 select-none'>Смотреть</h2>
+                        {artist.cover_url ? <img className='rounded-full mx-1 h-auto w-[7vw] group-hover:brightness-60' src={artist.cover_url} /> : <div className='w-[7vw] group-hover:brightness-60 h-[7vw] bg-surface0 mx-1 rounded-full flex'><MusicSVG className="text-text m-auto w-2/5 h-2/5" /></div>}
+                    </div>
+                    <h2 className='text-text w-[7vw] text-center select-none'>{artist.title}</h2>
+                </div>)}
+            </div>
+        </div>}
+        <div className="m-[0.2vw] mt-2 -z-9 overflow-y-scroll overflow-x-hidden  max-h-[72vh] xl:max-h-[83vh] scrollbar-none">
+            {artists.length > 0 && <h1 className='text-text text-xl font-bold mb-2'>Песни</h1>}
             {songs.map((song, idx) => <SongEl isPlaying={currentSong?.video_id == song.video_id} key={song.video_id} {...song} setCurSong={() => setSongFromMain(idx)} />)}
+
             {songs.length == 0 && <div className='text-text font-bold text-xl m-auto w-fit mt-4'>{findIn == 'YANDEX' ? 'Поиск в Яндекс.Музыка' : 'У вас нет сохранненных на диск песен. '} </div>}
             {songs.length == 0 && findIn == 'LOCAL' && <div className='text-subtext0 m-auto w-fit my-1'>Поищите в яндексе, добавте вручную или выбрете директорию</div>}
         </div>

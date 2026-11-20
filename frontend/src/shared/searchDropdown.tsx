@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type RefObject } from "react";
 import type { SearchDropdownProps } from "../entities/dataInterfaces";
 import { handleKeyWithKeyMap } from "../entities/keyHandler";
-import type { info } from "console";
 
 /**
  * `SearchDropdown` component for dropdown search suggestions
@@ -20,11 +19,11 @@ export function SearchDropdown({ dropdownData, searchFunc, setValue, search, inp
         'Enter': e => { setValue(dropdownData[focusedSuggestion]); e.preventDefault() },
         'Escape': e => { inputElRef.current.blur() }
     }), [dropdownData, focusedSuggestion]);
-
     useEffect(() => {
         const searchSuggetionsControl = (e: KeyboardEvent) => {
             handleKeyWithKeyMap(e, keyMap)
         }
+        document.querySelectorAll(".ss")[focusedSuggestion]?.scrollIntoView();
         inputElRef.current.addEventListener('keydown', searchSuggetionsControl);
         return () => { inputElRef.current?.removeEventListener('keydown', searchSuggetionsControl) }
     }, [dropdownData, focusedSuggestion])
@@ -32,9 +31,9 @@ export function SearchDropdown({ dropdownData, searchFunc, setValue, search, inp
         return (null);
     else
         return (
-            <div className="flex m-auto flex-col bg-base w-4/5 p-1" >
+            <div className="flex rounded-xl m-auto flex-col bg-base w-4/5 p-1 max-h-[15vh] overflow-y-scroll scrollbar-none" >
                 {dropdownData.map((ss, idx) =>
-                    <span key={ss} className={"text-subtext0" + (focusedSuggestion == idx ? ' bg-surface0' : '')} onMouseEnter={() => setFocusedSuggestion(idx)} onMouseDown={() => setValue(ss)} >{ss}</span>
+                    <span key={ss} className={"ss text-subtext0" + (focusedSuggestion == idx ? ' bg-surface0' : '')} onMouseEnter={() => setFocusedSuggestion(idx)} onMouseDown={() => setValue(ss)} >{ss}</span>
                 )}
             </div>
         )

@@ -1,11 +1,10 @@
-import json
-from os import wait
-from pathlib import Path
+from typing import List
 from fastapi import HTTPException
 import os
 import requests
 from yandex_music import Client, Search, Suggestions
 from yandex_music import OAuthToken
+from yandex_music.track.track import Track
 
 from config import SONGS_DIR
 from mutagen.id3 import ID3, TIT2, TPE1
@@ -132,14 +131,56 @@ def ym_search_s(query=""):
     return _s.suggestions if _s else []
 
 
+def ym_search_by_artist(artist: str, query=""):
+    client = get_client()
+    __q = client.artists_tracks(artist)
+    if not __q:
+        raise HTTPException(status_code=500)
+    _tracks: List[Track] | None = __q.tracks
+    if not _tracks:
+        raise HTTPException(status_code=500)
+    tr = [
+        {
+            "type": "track",
+            "video_id": t.track_id,
+            "cover_url": f"https://{t.cover_uri.replace('%%', '400x400')}"
+            if t.cover_uri
+            else "",
+            "artist": ", ".join(
+                [a.name if a.name is not None else "Unknown" for a in t.artists]
+            ),
+            "title": t.title,
+            "duration": round(t.duration_ms / 1000) if t.duration_ms else 0,
+            "stream_url": "yandex",
+        }
+        for t in _tracks
+    ]
+    return tr
+
+
 def ym_search(query=""):
     client = get_client()
     _search: Search | None = client.search(text=query, type_="all", page=0)
     if _search is None:
         raise HTTPException(status_code=500, detail="failed to search")
+    artists = []
+    if _search.artists and _search.artists.results:
+        tr = [
+            {
+                "type": "artist",
+                "id": t.id,
+                "cover_url": f"{t.get_og_image_url()}" if t.og_image else "",
+                "title": t.name,
+                "stream_url": "artist",
+            }
+            for t in _search.artists.results
+        ]
+        artists = tr[0:30]
+    tracks = []
     if _search.tracks and _search.tracks.results:
         tr = [
             {
+                "type": "track",
                 "video_id": t.track_id,
                 "cover_url": f"https://{t.cover_uri.replace('%%', '400x400')}"
                 if t.cover_uri
@@ -153,8 +194,8 @@ def ym_search(query=""):
             }
             for t in _search.tracks.results
         ]
-        return tr[0:30]
-    return []
+        tracks = tr[0:30]
+    return {"artists": artists, "tracks": tracks}
 
 
 def get_client():

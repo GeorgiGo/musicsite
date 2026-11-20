@@ -6,9 +6,9 @@ import type { dateTime, simplifiedDate, songTimeStat } from "../entities/dataInt
 
 export function timeFromSeconds(seconds: number, useSeconds = true) {
     const h = seconds / 3600 > 1 ? `${Math.floor(seconds / 3600)}ч` : ''
-    const m = Math.floor(seconds % 3600 / 60);
-    const s = useSeconds ? `${Math.round(seconds % 60)}с` : '';
-    return (`${h} ${m}м ${s}`)
+    const m = seconds > 60 ? `${Math.floor(seconds % 3600 / 60)}м` : '';
+    const s = useSeconds || !m ? `${Math.round(seconds % 60)}с` : '';
+    return (`${h} ${m} ${s}`)
 }
 
 export default function StatisticsField({ curTab, setCurTab }) {
@@ -34,10 +34,10 @@ export default function StatisticsField({ curTab, setCurTab }) {
 
 export function StatisticsTab({ curTab }) {
     return (
-        <div style={{ display: (curTab == 'STATISTICS' ? 'block' : 'none') }} className=''>
-            <div className="h-full w-full text-text p-8 pt-3">
-                <h1 className="text-xl font-bold m-auto w-fit text-[x-large] text-shadow-[0_0_4px_var(--color-text)] mb-3">-- Общая статистика --</h1>
-                <div className="grid grid-cols-4 gap-8">
+        <div style={{ display: (curTab == 'STATISTICS' ? 'block' : 'none') }}>
+            <div className="h-full w-full text-text px-6 pt-2">
+                <h1 className="text-xl font-bold m-auto w-fit text-[x-large] text-shadow-[0_0_4px_var(--color-text)] mb-1">-- Общая статистика --</h1>
+                <div className="grid grid-cols-4 grid-rows-5 gap-4">
                     <BaseInformation />
                     <div className="col-span-3">
                         <EachSongTime update={true} />
@@ -49,7 +49,6 @@ export function StatisticsTab({ curTab }) {
     )
 }
 
-// Функция генерации плавного пути (Кубические сплайны Безье)
 const lineCommand = (point: number[], i: number, a: number[][]) => {
     const cps = (p1, p2, p3, isEnd) => {
         const cpX = p2[0] + (p3 ? (p3[0] - p1[0]) * 0.2 : (p2[0] - p1[0]) * 0.2) * (isEnd ? -1 : 1);
@@ -70,17 +69,14 @@ const svgPath = (points: number[][]) => {
 
 export function PremiumAreaChart({ er }) {
     const { songTimeDict } = useStatistics()
-    // Используем функцию подготовки данных из предыдущего ответа
     const data = useMemo(() => transformData(songTimeDict), [songTimeDict]);
-    const width = useMemo(() => er.current?.getBoundingClientRect().width | 1200, [er.current]);
-    const height = 500;
+    const width = useMemo(() => er.current?.getBoundingClientRect().width | window.innerWidth * .7, [er.current]);
+    const height = 400;
     const padding = { top: 40, right: 20, bottom: 40, left: 50 };
 
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
-    // Расчет экстремумов
     const maxDuration = useMemo(() => Math.max(...data.map(d => d.duration), 0) || 1, [data]);
-    // Вычисляем [x, y] координаты для каждой точки на графике
     const points = useMemo(() => {
         if (data.length === 0) return [];
         return data.map((item, index) => {
@@ -90,7 +86,6 @@ export function PremiumAreaChart({ er }) {
         });
     }, [data, chartWidth, chartHeight, maxDuration]);
 
-    // Строим замкнутый контур для градиентной заливки под графиком
     const fillPathData = useMemo(() => {
         if (points.length === 0) return '';
         const linePath = svgPath(points);
@@ -102,17 +97,15 @@ export function PremiumAreaChart({ er }) {
 
     const strokePathData = useMemo(() => svgPath(points), [points]);
     return (
-        <div style={{ background: 'var(--color-mantle)', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: width }}>
-            <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
+        <div className="w-full, bg-mantle rounded-2xl p-4" style={{ maxWidth: width }}>
+            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible">
                 <defs>
-                    {/* Настройка фиолетового градиента для заливки */}
                     <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.35" />
-                        <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.00" />
+                        <stop offset="0%" stopColor="var(--color-mauve)" stopOpacity="0.20" />
+                        <stop offset="100%" stopColor="var(--color-mauve)" stopOpacity="0.00" />
                     </linearGradient>
                 </defs>
 
-                {/* Горизонтальная сетка (как на скриншоте) */}
                 {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
                     const y = padding.top + chartHeight * (1 - ratio);
                     return (
@@ -120,17 +113,14 @@ export function PremiumAreaChart({ er }) {
                     );
                 })}
 
-                {/* 1. Градиентная область ПОД линией */}
                 {points.length > 0 && (
                     <path d={fillPathData} fill="url(#chartGradient)" />
                 )}
 
-                {/* 2. Сама плавная линия графика */}
                 {points.length > 0 && (
                     <path d={strokePathData} fill="none" stroke="#A78BFA" strokeWidth="3" strokeLinecap="round" />
                 )}
 
-                {/* Интерактивные точки при наведении */}
                 {points.map((pt, i) => (
                     <g key={i} className="chart-node" style={{ cursor: 'pointer' }}>
                         {/* Невидимая большая область для легкого наведения мыши */}
@@ -144,13 +134,12 @@ export function PremiumAreaChart({ er }) {
                                 {data[i].dateStr.slice(0, 5)}
                             </text>
                             <text x={pt[0]} y={pt[1] - 16} textAnchor="middle" fill="var(--color-text)" fontSize="1.2rem" fontWeight="500">
-                                {timeFromSeconds(data[i].duration)}
+                                {timeFromSeconds(data[i].duration, false)}
                             </text>
                         </g>
                     </g>
                 ))}
 
-                {/* Подписи дат по оси X */}
                 {data.map((item, i) => {
                     if (data.length > 10 && i % 2 !== 0) return null; // Скрываем лишние даты, если их слишком много
                     const x = padding.left + (i / (data.length - 1 || 1)) * chartWidth;
@@ -184,7 +173,6 @@ const transformData = (songsArray: songTimeStat[]) => {
     const dates = Object.keys(dailyMap).sort((a, b) => new Date(a) - new Date(b));
     if (dates.length === 0) return [];
 
-    // Заполняем пропущенные дни нулями для красивого шага сетки
     const result = [];
     const start = new Date(dates[0]);
     const end = new Date(dates[dates.length - 1]);
@@ -193,7 +181,7 @@ const transformData = (songsArray: songTimeStat[]) => {
         const key = d.toISOString().split('T')[0];
         const [year, month, day] = key.split('-');
         result.push({
-            dateStr: `${day}.${month}.${year.slice(2)}`, // Компактный формат для оси X (например, "03.08")
+            dateStr: `${day}.${month}.${year.slice(2)}`,
             fullDate: key,
             duration: dailyMap[key] || 0
         });
@@ -203,7 +191,7 @@ const transformData = (songsArray: songTimeStat[]) => {
 function DayGraphic() {
     const elRef = useRef<HTMLDivElement>(null);
     return (
-        <div ref={elRef} className="p-0 border border-surface0 rounded-2xl">
+        <div ref={elRef} className="p-0 border-1 border-surface1 rounded-2xl mt-1">
             <PremiumAreaChart er={elRef} />
         </div>
     )
@@ -225,16 +213,16 @@ function BaseInformation() {
         'text',
         'text'
     ]
-    return (<div className="relative block p-4 bg-mantle border-2 border-surface0 rounded-xl">
-        <Field className="p-4 bg-base lg:text-[large]" name="Всего времени слушали: " value={AllTime} metricFunc={timeFromSeconds} />
-        <Field className="p-4 bg-base lg:text-[large]" name="Сегодня слушали: " value={TodayListen} metricFunc={timeFromSeconds} />
+    return (<div className="relative block p-4 bg-mantle border-1 border-surface1 rounded-2xl h-2/3">
+        <Field className="p-4 bg-base lg:text-[large]" name="Всего времени слушали: " value={AllTime} metricFunc={d => timeFromSeconds(d, false)} />
+        <Field className="p-4 bg-base lg:text-[large]" name="Сегодня слушали: " value={TodayListen} metricFunc={d => timeFromSeconds(d, false)} />
         <Divider />
         <div>
             {songTimeDict.slice(0, 5).map((value: songTimeStat, idx: number) => <Field
                 key={value.video_id}
                 style={{ color: `var(--color-${nominationColors[idx]})` }}
                 className="p-4 bg-base mt-0 mb-0 "
-                name={`${idx + 1}.${value.name}`} value={value.times.reduce((acc, v) => acc + v.time, 0)} metricFunc={timeFromSeconds} />)}
+                name={`${idx + 1}.${value.name}`} value={value.times.reduce((acc, v) => acc + v.time, 0)} metricFunc={d => timeFromSeconds(d, false)} />)}
         </div>
     </div>)
 }
